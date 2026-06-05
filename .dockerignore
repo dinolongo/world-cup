@@ -1,0 +1,39 @@
+# Gradle
+.gradle
+build
+!build.gradle
+!settings.gradle
+gradle-app.setting
+!gradlew
+!gradlew.bat
+!gradle/
+
+# IDE
+.idea
+.vscode
+*.iml
+*.iws
+*.ipr
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test
+src/test
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md

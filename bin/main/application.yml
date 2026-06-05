@@ -1,0 +1,76 @@
+spring:
+  application:
+    name: world-cup-backend
+
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/worldcup}
+    username: ${DATABASE_USERNAME:worldcup}
+    password: ${DATABASE_PASSWORD:worldcup}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    open-in-view: false
+
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=15m
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: always
+    include-binding-errors: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# Football-Data.org Configuration
+football-data:
+  api:
+    base-url: https://api.football-data.org/v4
+    api-key: 26e479b7fb3746ad94e81b31088fca84
+    competitions:
+      world-cup: WC
+
+# Cache TTL Configuration
+cache:
+  ttl:
+    matches: 15m
+    standings: 1h
+    teams: 24h
+
+# Logging Configuration
+logging:
+  level:
+    com.worldcup2026: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    org.flywaydb: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
