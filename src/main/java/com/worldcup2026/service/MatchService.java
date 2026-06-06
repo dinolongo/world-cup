@@ -39,7 +39,7 @@ public class MatchService {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
 
-    @Transactional(readOnly = true)
+    @Transactional
     @Cacheable(value = CacheConfig.MATCHES_CACHE, key = "'all'")
     public List<MatchDto> getAllMatches() {
         log.info("Fetching all matches from database");
@@ -56,7 +56,7 @@ public class MatchService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     @Cacheable(value = CacheConfig.MATCHES_CACHE, key = "#id")
     public MatchDto getMatchById(Long id) {
         log.info("Fetching match by id: {}", id);

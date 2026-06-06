@@ -36,7 +36,7 @@ public class GroupStandingService {
     @Value("${cache.ttl.standings:1h}")
     private Duration standingsCacheTtl;
 
-    @Transactional(readOnly = true)
+    @Transactional
     @Cacheable(value = CacheConfig.STANDINGS_CACHE, key = "'all'")
     public List<GroupStandingDto> getAllGroupStandings() {
         log.info("Fetching all group standings from database");
@@ -53,7 +53,7 @@ public class GroupStandingService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     @Cacheable(value = CacheConfig.STANDINGS_CACHE, key = "#groupName")
     public List<GroupStandingDto> getGroupStandingsByGroup(String groupName) {
         log.info("Fetching standings for group: {}", groupName);

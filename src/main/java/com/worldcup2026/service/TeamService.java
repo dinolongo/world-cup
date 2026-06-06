@@ -30,7 +30,7 @@ public class TeamService {
     @Value("${cache.ttl.teams:24h}")
     private Duration teamsCacheTtl;
 
-    @Transactional(readOnly = true)
+    @Transactional
     @Cacheable(value = CacheConfig.TEAMS_CACHE, key = "'all'")
     public List<TeamDto> getAllTeams() {
         log.info("Fetching all teams from database");
@@ -47,7 +47,7 @@ public class TeamService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     @Cacheable(value = CacheConfig.TEAMS_CACHE, key = "#id")
     public TeamDto getTeamById(Long id) {
         log.info("Fetching team by id: {}", id);
