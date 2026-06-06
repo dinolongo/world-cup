@@ -29,17 +29,18 @@ USER spring:spring
 # Copy the JAR file from builder
 COPY --from=builder /build/build/libs/world-cup-backend.jar app.jar
 
-# Expose port
+# Expose port (Render will set PORT env var)
 EXPOSE 8080
 
-# Health check
+# Health check (use PORT env var if available, default to 8080)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-8080}/actuator/health || exit 1
 
-# Run the application
+# Run the application (support Render's PORT env var)
 ENTRYPOINT ["java", \
     "-XX:+UseContainerSupport", \
     "-XX:MaxRAMPercentage=75.0", \
     "-Djava.security.egd=file:/dev/./urandom", \
+    "-Dserver.port=${PORT:-8080}", \
     "-jar", \
     "/app/app.jar"]
