@@ -35,6 +35,11 @@ const formatDate = (dateStr) => {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+// Format time for display
+const formatTime = (timeStr) => {
+  return timeStr
+}
+
 // Format team name to show "Winner of Group X" instead of codes like "1A", "2B"
 const formatTeamName = (teamCode) => {
   if (!teamCode) return 'TBD'
@@ -94,8 +99,9 @@ const selectWinner = (match, team) => {
             class="match-card"
           >
             <div class="match-info">
-              <span class="date">{{ formatDate(match.date) }}</span>
-              <span class="stadium">{{ match.ground }}</span>
+              <span class="date-time">{{ formatDate(match.date) }} • {{ formatTime(match.time) }}</span>
+              <span class="stadium">{{ getStadium(match.ground)?.name || match.ground }}</span>
+              <span class="city">{{ getStadium(match.ground)?.city || '' }}</span>
             </div>
             <div class="teams">
               <button 
@@ -125,8 +131,9 @@ const selectWinner = (match, team) => {
             class="match-card"
           >
             <div class="match-info">
-              <span class="date">{{ formatDate(match.date) }}</span>
-              <span class="stadium">{{ match.ground }}</span>
+              <span class="date-time">{{ formatDate(match.date) }} • {{ formatTime(match.time) }}</span>
+              <span class="stadium">{{ getStadium(match.ground)?.name || match.ground }}</span>
+              <span class="city">{{ getStadium(match.ground)?.city || '' }}</span>
             </div>
             <div class="teams">
               <button 
@@ -156,8 +163,9 @@ const selectWinner = (match, team) => {
             class="match-card"
           >
             <div class="match-info">
-              <span class="date">{{ formatDate(match.date) }}</span>
-              <span class="stadium">{{ match.ground }}</span>
+              <span class="date-time">{{ formatDate(match.date) }} • {{ formatTime(match.time) }}</span>
+              <span class="stadium">{{ getStadium(match.ground)?.name || match.ground }}</span>
+              <span class="city">{{ getStadium(match.ground)?.city || '' }}</span>
             </div>
             <div class="teams">
               <button 
@@ -187,8 +195,9 @@ const selectWinner = (match, team) => {
             class="match-card"
           >
             <div class="match-info">
-              <span class="date">{{ formatDate(match.date) }}</span>
-              <span class="stadium">{{ match.ground }}</span>
+              <span class="date-time">{{ formatDate(match.date) }} • {{ formatTime(match.time) }}</span>
+              <span class="stadium">{{ getStadium(match.ground)?.name || match.ground }}</span>
+              <span class="city">{{ getStadium(match.ground)?.city || '' }}</span>
             </div>
             <div class="teams">
               <button 
@@ -218,8 +227,9 @@ const selectWinner = (match, team) => {
             class="match-card"
           >
             <div class="match-info">
-              <span class="date">{{ formatDate(match.date) }}</span>
-              <span class="stadium">{{ match.ground }}</span>
+              <span class="date-time">{{ formatDate(match.date) }} • {{ formatTime(match.time) }}</span>
+              <span class="stadium">{{ getStadium(match.ground)?.name || match.ground }}</span>
+              <span class="city">{{ getStadium(match.ground)?.city || '' }}</span>
             </div>
             <div class="teams">
               <button 
@@ -249,8 +259,9 @@ const selectWinner = (match, team) => {
             class="match-card final-card"
           >
             <div class="match-info">
-              <span class="date">{{ formatDate(match.date) }}</span>
-              <span class="stadium">{{ match.ground }}</span>
+              <span class="date-time">{{ formatDate(match.date) }} • {{ formatTime(match.time) }}</span>
+              <span class="stadium">{{ getStadium(match.ground)?.name || match.ground }}</span>
+              <span class="city">{{ getStadium(match.ground)?.city || '' }}</span>
             </div>
             <div class="teams">
               <button 
@@ -339,19 +350,26 @@ h1 {
 
 .match-info {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 4px;
   margin-bottom: 8px;
   font-size: 12px;
   color: #666;
 }
 
-.date {
+.date-time {
   font-weight: 600;
+  color: #333;
 }
 
 .stadium {
+  color: #666;
+  font-weight: 500;
+}
+
+.city {
   color: #999;
+  font-size: 11px;
 }
 
 .teams {

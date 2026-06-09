@@ -34,6 +34,12 @@ const isActive = (path) => {
           Current Standings
         </button>
         <button 
+          @click="navigateTo('/prediction')" 
+          :class="['nav-button', { active: isActive('/prediction') }]"
+        >
+          Prediction
+        </button>
+        <button 
           @click="navigateTo('/knockouts')" 
           :class="['nav-button', { active: isActive('/knockouts') }]"
         >

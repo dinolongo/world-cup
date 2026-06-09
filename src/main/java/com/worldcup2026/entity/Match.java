@@ -16,7 +16,8 @@ import java.time.LocalDateTime;
     @Index(name = "idx_match_home_team", columnList = "home_team_id"),
     @Index(name = "idx_match_away_team", columnList = "away_team_id"),
     @Index(name = "idx_match_status", columnList = "status"),
-    @Index(name = "idx_match_utc_date", columnList = "utc_date")
+    @Index(name = "idx_match_utc_date", columnList = "utc_date"),
+    @Index(name = "idx_match_stadium", columnList = "stadium_id")
 })
 @Data
 @Builder
@@ -55,6 +56,10 @@ public class Match {
 
     @Column(name = "group_name", length = 20)
     private String group;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "stadium_id")
+    private Stadium stadium;
 
     @UpdateTimestamp
     @Column(name = "last_updated")
