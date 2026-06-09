@@ -20,43 +20,47 @@ const teamCrests = {
   'South Korea': 'https://crests.football-data.org/772.png',
   'France': 'https://crests.football-data.org/773.svg',
   'South Africa': 'https://crests.football-data.org/9396.svg',
-  'Canada': 'https://crests.football-data.org/768.svg',
-  'Qatar': 'https://crests.football-data.org/qatar.svg',
-  'Switzerland': 'https://crests.football-data.org/767.svg',
+  'Canada': 'https://crests.football-data.org/canada.svg',
+  'Qatar': 'https://crests.football-data.org/8030.svg',
+  'Switzerland': 'https://crests.football-data.org/788.svg',
   'Morocco': 'https://crests.football-data.org/morocco.svg',
-  'Australia': 'https://crests.football-data.org/australia.svg',
-  'Netherlands': 'https://crests.football-data.org/774.svg',
-  'Sweden': 'https://crests.football-data.org/775.svg',
-  'Belgium': 'https://crests.football-data.org/776.svg',
-  'Egypt': 'https://crests.football-data.org/egypt.svg',
+  'Australia': 'https://crests.football-data.org/779.svg',
+  'Netherlands': 'https://crests.football-data.org/8601.svg',
+  'Sweden': 'https://crests.football-data.org/792.svg',
+  'Belgium': 'https://crests.football-data.org/805.svg',
+  'Egypt': 'https://crests.football-data.org/825.svg',
   'Iran': 'https://crests.football-data.org/iran.svg',
-  'New Zealand': 'https://crests.football-data.org/new-zealand.svg',
-  'Cape Verde': 'https://crests.football-data.org/cape-verde.svg',
-  'Saudi Arabia': 'https://crests.football-data.org/saudi-arabia.svg',
+  'New Zealand': 'https://crests.football-data.org/783.svg',
+  'Cape Verde Islands': 'https://crests.football-data.org/cape_verde.svg',
+  'Saudi Arabia': 'https://crests.football-data.org/saudi_arabia.svg',
   'Senegal': 'https://crests.football-data.org/senegal.svg',
   'Iraq': 'https://crests.football-data.org/iraq.svg',
-  'Norway': 'https://crests.football-data.org/norway.svg',
+  'Norway': 'https://crests.football-data.org/813.svg',
   'Algeria': 'https://crests.football-data.org/algeria.svg',
-  'Austria': 'https://crests.football-data.org/austria.svg',
-  'Jordan': 'https://crests.football-data.org/jordan.svg',
-  'Uzbekistan': 'https://crests.football-data.org/uzbekistan.svg',
-  'Colombia': 'https://crests.football-data.org/colombia.svg',
-  'DR Congo': 'https://crests.football-data.org/dr-congo.svg',
-  'Croatia': 'https://crests.football-data.org/croatia.svg',
+  'Austria': 'https://crests.football-data.org/816.svg',
+  'Jordan': 'https://crests.football-data.org/8049.png',
+  'Uzbekistan': 'https://crests.football-data.org/8070.png',
+  'Colombia': 'https://crests.football-data.org/818.svg',
+  'Congo DR': 'https://crests.football-data.org/congo_dr.svg',
+  'Croatia': 'https://crests.football-data.org/799.svg',
   'Panama': 'https://crests.football-data.org/panama.svg',
-  'Czechia': 'https://crests.football-data.org/czechia.svg',
-  'Bosnia and Herzegovina': 'https://crests.football-data.org/bosnia.svg',
+  'Czechia': 'https://crests.football-data.org/798.svg',
+  'Bosnia-Herzegovina': 'https://crests.football-data.org/bosnia.svg',
   'Haiti': 'https://crests.football-data.org/haiti.svg',
-  'Scotland': 'https://crests.football-data.org/scotland.svg',
-  'Turkey': 'https://crests.football-data.org/turkey.svg',
+  'Scotland': 'https://crests.football-data.org/814.svg',
+  'Turkey': 'https://crests.football-data.org/803.svg',
   'Curaçao': 'https://crests.football-data.org/curacao.svg',
-  'Ivory Coast': 'https://crests.football-data.org/ivory-coast.svg',
-  'Ecuador': 'https://crests.football-data.org/ecuador.svg',
+  'Ivory Coast': 'https://crests.football-data.org/787.svg',
+  'Ecuador': 'https://crests.football-data.org/791.svg',
   'Tunisia': 'https://crests.football-data.org/tunisia.svg'
 };
 
 const getTeamCrest = (teamName) => {
   return teamCrests[teamName] || '';
+};
+
+const formatGroupName = (groupName) => {
+  return groupName.replace('_', ' ');
 };
 
 // reactive state
@@ -122,7 +126,7 @@ onMounted(async () => {
       <GroupTable 
         v-for="(teams, groupName) in groups" 
         :key="groupName"
-        :group-name="groupName"
+        :group-name="formatGroupName(groupName)"
         :teams="teams"
       />
     </div>

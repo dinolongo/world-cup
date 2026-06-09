@@ -1,0 +1,74 @@
+{
+  "name": "World Cup 2026 Bracket Advancement Map",
+  "description": "Maps which matches feed into which for auto-advancement",
+  "advancement": {
+    "round_of_32": {
+      "73": { "winner_to": 90 },
+      "74": { "winner_to": 89 },
+      "75": { "winner_to": 90 },
+      "76": { "winner_to": 91 },
+      "77": { "winner_to": 89 },
+      "78": { "winner_to": 91 },
+      "79": { "winner_to": 92 },
+      "80": { "winner_to": 92 },
+      "81": { "winner_to": 93 },
+      "82": { "winner_to": 94 },
+      "83": { "winner_to": 95 },
+      "84": { "winner_to": 95 },
+      "85": { "winner_to": 96 },
+      "86": { "winner_to": 96 },
+      "87": { "winner_to": 93 },
+      "88": { "winner_to": 94 }
+    },
+    "round_of_16": {
+      "89": { "winner_to": 97 },
+      "90": { "winner_to": 97 },
+      "91": { "winner_to": 98 },
+      "92": { "winner_to": 98 },
+      "93": { "winner_to": 99 },
+      "94": { "winner_to": 99 },
+      "95": { "winner_to": 100 },
+      "96": { "winner_to": 100 }
+    },
+    "quarter_finals": {
+      "97": { "winner_to": 101 },
+      "98": { "winner_to": 101 },
+      "99": { "winner_to": 102 },
+      "100": { "winner_to": 102 }
+    },
+    "semi_finals": {
+      "101": { 
+        "winner_to": 103,
+        "loser_to": 104
+      },
+      "102": { 
+        "winner_to": 103,
+        "loser_to": 104
+      }
+    },
+    "final": {
+      "103": { "winner_to": null }
+    },
+    "third_place": {
+      "104": { "winner_to": null }
+    }
+  },
+  "reverse_mapping": {
+    "89": { "from": [74, 77] },
+    "90": { "from": [73, 75] },
+    "91": { "from": [76, 78] },
+    "92": { "from": [79, 80] },
+    "93": { "from": [81, 87] },
+    "94": { "from": [82, 88] },
+    "95": { "from": [83, 84] },
+    "96": { "from": [85, 86] },
+    "97": { "from": [89, 90] },
+    "98": { "from": [91, 92] },
+    "99": { "from": [93, 94] },
+    "100": { "from": [95, 96] },
+    "101": { "from": [97, 98] },
+    "102": { "from": [99, 100] },
+    "103": { "from": [101, 102] },
+    "104": { "from": [101, 102] }
+  }
+}
