@@ -5,7 +5,7 @@ BEGIN;
 UPDATE teams SET group_name = 'GROUP_A' WHERE name IN ('Mexico', 'South Africa', 'South Korea', 'Czechia');
 
 -- Group B
-UPDATE teams SET group_name = 'GROUP_B' WHERE name IN ('Canada', 'Qatar', 'Switzerland', 'Bosnia and Herzegovina');
+UPDATE teams SET group_name = 'GROUP_B' WHERE name IN ('Canada', 'Qatar', 'Switzerland', 'Bosnia-Herzegovina');
 
 -- Group C
 UPDATE teams SET group_name = 'GROUP_C' WHERE name IN ('Brazil', 'Morocco', 'Haiti', 'Scotland');
@@ -23,7 +23,7 @@ UPDATE teams SET group_name = 'GROUP_F' WHERE name IN ('Netherlands', 'Japan', '
 UPDATE teams SET group_name = 'GROUP_G' WHERE name IN ('Belgium', 'Egypt', 'Iran', 'New Zealand');
 
 -- Group H
-UPDATE teams SET group_name = 'GROUP_H' WHERE name IN ('Spain', 'Cape Verde', 'Saudi Arabia', 'Uruguay');
+UPDATE teams SET group_name = 'GROUP_H' WHERE name IN ('Spain', 'Cape Verde Islands', 'Saudi Arabia', 'Uruguay');
 
 -- Group I
 UPDATE teams SET group_name = 'GROUP_I' WHERE name IN ('France', 'Senegal', 'Iraq', 'Norway');
@@ -32,7 +32,7 @@ UPDATE teams SET group_name = 'GROUP_I' WHERE name IN ('France', 'Senegal', 'Ira
 UPDATE teams SET group_name = 'GROUP_J' WHERE name IN ('Argentina', 'Algeria', 'Austria', 'Jordan');
 
 -- Group K
-UPDATE teams SET group_name = 'GROUP_K' WHERE name IN ('Portugal', 'Uzbekistan', 'Colombia', 'DR Congo');
+UPDATE teams SET group_name = 'GROUP_K' WHERE name IN ('Portugal', 'Uzbekistan', 'Colombia', 'Congo DR');
 
 -- Group L
 UPDATE teams SET group_name = 'GROUP_L' WHERE name IN ('England', 'Croatia', 'Ghana', 'Panama');
