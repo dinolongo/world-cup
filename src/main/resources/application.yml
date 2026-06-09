@@ -34,6 +34,10 @@ spring:
     caffeine:
       spec: maximumSize=1000,expireAfterWrite=15m
 
+  mvc:
+    favicon:
+      enabled: false
+
 server:
   port: ${SERVER_PORT:8080}
   error:
@@ -63,12 +67,6 @@ cache:
     matches: 15m
     standings: 1h
     teams: 24h
-
-# Spring Web Configuration
-spring:
-  mvc:
-    favicon:
-      enabled: false
 
 # Logging Configuration
 logging:
