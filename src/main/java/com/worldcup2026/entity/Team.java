@@ -13,7 +13,8 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "teams", indexes = {
     @Index(name = "idx_team_external_api_id", columnList = "external_api_id"),
-    @Index(name = "idx_team_tla", columnList = "tla")
+    @Index(name = "idx_team_tla", columnList = "tla"),
+    @Index(name = "idx_team_group", columnList = "group_name")
 })
 @Data
 @Builder
@@ -39,6 +40,9 @@ public class Team {
 
     @Column(name = "crest_url")
     private String crestUrl;
+
+    @Column(name = "group_name", length = 10)
+    private String groupName;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

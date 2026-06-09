@@ -64,6 +64,12 @@ cache:
     standings: 1h
     teams: 24h
 
+# Spring Web Configuration
+spring:
+  mvc:
+    favicon:
+      enabled: false
+
 # Logging Configuration
 logging:
   level:

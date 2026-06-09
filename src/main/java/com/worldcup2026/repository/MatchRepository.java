@@ -24,4 +24,6 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
     List<Match> findByAwayTeamId(Long awayTeamId);
 
     boolean existsByExternalApiId(Integer externalApiId);
+
+    List<Match> findByStageAndGroup(String stage, String group);
 }

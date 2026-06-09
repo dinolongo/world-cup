@@ -1,27 +1,15 @@
 package com.worldcup2026.service;
 
-import com.worldcup2026.client.FootballDataClient;
-import com.worldcup2026.client.footballdata.FootballDataStandingResponse;
-import com.worldcup2026.config.CacheConfig;
 import com.worldcup2026.dto.GroupStandingDto;
-import com.worldcup2026.dto.TeamDto;
-import com.worldcup2026.entity.GroupStanding;
+import com.worldcup2026.entity.Match;
 import com.worldcup2026.entity.Team;
-import com.worldcup2026.exception.ResourceNotFoundException;
-import com.worldcup2026.repository.GroupStandingRepository;
+import com.worldcup2026.repository.MatchRepository;
 import com.worldcup2026.repository.TeamRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,150 +17,130 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GroupStandingService {
 
-    private final GroupStandingRepository groupStandingRepository;
+    private final MatchRepository matchRepository;
     private final TeamRepository teamRepository;
-    private final FootballDataClient footballDataClient;
 
-    @Value("${cache.ttl.standings:1h}")
-    private Duration standingsCacheTtl;
-
-    @Transactional
-    @Cacheable(value = CacheConfig.STANDINGS_CACHE, key = "'all'")
     public List<GroupStandingDto> getAllGroupStandings() {
-        log.info("Fetching all group standings from database");
-        List<GroupStanding> standings = groupStandingRepository.findAll();
+        log.info("Calculating all group standings from match data");
         
-        if (standings.isEmpty() || isDataStale(standings.get(0).getLastUpdated(), standingsCacheTtl)) {
-            log.info("Standings data is stale or empty, refreshing from Football-Data.org");
-            refreshStandingsFromApi();
-            standings = groupStandingRepository.findAll();
+        // Get all unique group names from teams
+        List<String> groupNames = teamRepository.findAll().stream()
+                .map(Team::getGroupName)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+        
+        // Calculate standings for each group
+        List<GroupStandingDto> allStandings = new ArrayList<>();
+        for (String groupName : groupNames) {
+            allStandings.addAll(calculateGroupStandings(groupName));
         }
         
-        return standings.stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+        return allStandings;
     }
 
-    @Transactional
-    @Cacheable(value = CacheConfig.STANDINGS_CACHE, key = "#groupName")
     public List<GroupStandingDto> getGroupStandingsByGroup(String groupName) {
-        log.info("Fetching standings for group: {}", groupName);
-        List<GroupStanding> standings = groupStandingRepository.findByGroupNameOrderByPositionAsc(groupName);
-        
-        if (standings.isEmpty() || isDataStale(standings.get(0).getLastUpdated(), standingsCacheTtl)) {
-            log.info("Standings data for group {} is stale or empty, refreshing from Football-Data.org", groupName);
-            refreshStandingsFromApi();
-            standings = groupStandingRepository.findByGroupNameOrderByPositionAsc(groupName);
-        }
-        
-        return standings.stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+        log.info("Calculating standings for group: {}", groupName);
+        return calculateGroupStandings(groupName);
     }
 
-    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
-    @CacheEvict(value = CacheConfig.STANDINGS_CACHE, allEntries = true)
-    public void refreshStandingsFromApi() {
-        log.info("Refreshing standings from Football-Data.org API");
-        try {
-            List<List<FootballDataStandingResponse>> apiStandings = footballDataClient.getStandings();
-            
-            Map<Integer, Team> teamMap = teamRepository.findAll().stream()
-                    .collect(Collectors.toMap(Team::getExternalApiId, t -> t));
-            
-            for (List<FootballDataStandingResponse> groupStandings : apiStandings) {
-                String groupName = extractGroupName(groupStandings);
+    private List<GroupStandingDto> calculateGroupStandings(String groupName) {
+        // Get all teams in this group
+        List<Team> teams = teamRepository.findByGroupName(groupName);
+        if (teams.isEmpty()) {
+            log.warn("No teams found for group: {}", groupName);
+            return List.of();
+        }
+        
+        // Get all group stage matches for this group
+        List<Match> matches = matchRepository.findByStageAndGroup("GROUP_STAGE", groupName);
+        
+        // Calculate standings for each team
+        Map<Long, TeamStats> teamStatsMap = new HashMap<>();
+        
+        for (Team team : teams) {
+            teamStatsMap.put(team.getId(), new TeamStats(team.getId(), team.getName()));
+        }
+        
+        // Process each match
+        for (Match match : matches) {
+            if (match.getStatus() == Match.MatchStatus.FINISHED && 
+                match.getHomeScore() != null && match.getAwayScore() != null) {
                 
-                if (groupName != null) {
-                    groupStandingRepository.deleteByGroupName(groupName);
+                TeamStats homeStats = teamStatsMap.get(match.getHomeTeamId());
+                TeamStats awayStats = teamStatsMap.get(match.getAwayTeamId());
+                
+                if (homeStats != null && awayStats != null) {
+                    homeStats.played++;
+                    awayStats.played++;
                     
-                    for (FootballDataStandingResponse apiStanding : groupStandings) {
-                        createStanding(apiStanding, groupName, teamMap);
+                    homeStats.goalsFor += match.getHomeScore();
+                    homeStats.goalsAgainst += match.getAwayScore();
+                    
+                    awayStats.goalsFor += match.getAwayScore();
+                    awayStats.goalsAgainst += match.getHomeScore();
+                    
+                    if (match.getHomeScore() > match.getAwayScore()) {
+                        homeStats.wins++;
+                        homeStats.points += 3;
+                        awayStats.losses++;
+                    } else if (match.getHomeScore() < match.getAwayScore()) {
+                        awayStats.wins++;
+                        awayStats.points += 3;
+                        homeStats.losses++;
+                    } else {
+                        homeStats.draws++;
+                        awayStats.draws++;
+                        homeStats.points += 1;
+                        awayStats.points += 1;
                     }
                 }
             }
-            
-            log.info("Successfully refreshed standings for {} groups", apiStandings.size());
-        } catch (Exception e) {
-            log.error("Failed to refresh standings from API", e);
-            throw e;
-        }
-    }
-
-    private String extractGroupName(List<FootballDataStandingResponse> groupStandings) {
-        if (groupStandings.isEmpty() || groupStandings.get(0).getTeam() == null) {
-            return null;
         }
         
-        String teamName = groupStandings.get(0).getTeam().getName();
-        if (teamName != null && teamName.contains("Group")) {
-            int groupIndex = teamName.indexOf("Group");
-            return teamName.substring(groupIndex).trim();
+        // Convert to DTOs and sort
+        return teamStatsMap.values().stream()
+                .map(stats -> GroupStandingDto.builder()
+                        .groupName(groupName)
+                        .teamId(String.valueOf(stats.teamId))
+                        .teamName(stats.teamName)
+                        .played(stats.played)
+                        .wins(stats.wins)
+                        .draws(stats.draws)
+                        .losses(stats.losses)
+                        .goalsFor(stats.goalsFor)
+                        .goalsAgainst(stats.goalsAgainst)
+                        .goalDifference(stats.goalsFor - stats.goalsAgainst)
+                        .points(stats.points)
+                        .build())
+                .sorted((a, b) -> {
+                    // Sort by points (desc), then goal difference (desc), then goals for (desc)
+                    if (b.getPoints() != a.getPoints()) {
+                        return Integer.compare(b.getPoints(), a.getPoints());
+                    }
+                    if (b.getGoalDifference() != a.getGoalDifference()) {
+                        return Integer.compare(b.getGoalDifference(), a.getGoalDifference());
+                    }
+                    return Integer.compare(b.getGoalsFor(), a.getGoalsFor());
+                })
+                .collect(Collectors.toList());
+    }
+
+    private static class TeamStats {
+        Long teamId;
+        String teamName;
+        int played = 0;
+        int wins = 0;
+        int draws = 0;
+        int losses = 0;
+        int goalsFor = 0;
+        int goalsAgainst = 0;
+        int points = 0;
+
+        TeamStats(Long teamId, String teamName) {
+            this.teamId = teamId;
+            this.teamName = teamName;
         }
-        
-        return "GROUP_" + System.currentTimeMillis();
-    }
-
-    private void createStanding(FootballDataStandingResponse apiStanding, String groupName, Map<Integer, Team> teamMap) {
-        Team team = teamMap.get(apiStanding.getTeam().getId());
-        
-        if (team == null) {
-            log.warn("Skipping standing for team {} due to missing team data", apiStanding.getTeam().getId());
-            return;
-        }
-        
-        GroupStanding standing = GroupStanding.builder()
-                .groupName(groupName)
-                .teamId(team.getId())
-                .position(apiStanding.getPosition())
-                .playedGames(apiStanding.getPlayedGames())
-                .wins(apiStanding.getWins())
-                .draws(apiStanding.getDraws())
-                .losses(apiStanding.getLosses())
-                .goalsFor(apiStanding.getGoalsFor())
-                .goalsAgainst(apiStanding.getGoalsAgainst())
-                .goalDifference(apiStanding.getGoalDifference())
-                .points(apiStanding.getPoints())
-                .build();
-        groupStandingRepository.save(standing);
-        log.debug("Created standing for team {} in group {}", team.getName(), groupName);
-    }
-
-    private boolean isDataStale(LocalDateTime lastUpdated, Duration ttl) {
-        if (lastUpdated == null) {
-            return true;
-        }
-        return LocalDateTime.now().isAfter(lastUpdated.plus(ttl));
-    }
-
-    private GroupStandingDto mapToDto(GroupStanding standing) {
-        Team team = teamRepository.findById(standing.getTeamId()).orElse(null);
-        
-        return GroupStandingDto.builder()
-                .id(standing.getId())
-                .groupName(standing.getGroupName())
-                .team(team != null ? mapTeamToDto(team) : null)
-                .position(standing.getPosition())
-                .playedGames(standing.getPlayedGames())
-                .wins(standing.getWins())
-                .draws(standing.getDraws())
-                .losses(standing.getLosses())
-                .goalsFor(standing.getGoalsFor())
-                .goalsAgainst(standing.getGoalsAgainst())
-                .goalDifference(standing.getGoalDifference())
-                .points(standing.getPoints())
-                .lastUpdated(standing.getLastUpdated())
-                .build();
-    }
-
-    private TeamDto mapTeamToDto(Team team) {
-        return TeamDto.builder()
-                .id(team.getId())
-                .externalApiId(team.getExternalApiId())
-                .name(team.getName())
-                .shortName(team.getShortName())
-                .tla(team.getTla())
-                .crestUrl(team.getCrestUrl())
-                .build();
     }
 }
