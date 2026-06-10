@@ -1,23 +1,21 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import draggable from 'vuedraggable'
+import { usePredictionStore } from '../stores/predictionStore'
 
 const router = useRouter()
+const predictionStore = usePredictionStore()
 
 // Step management
 const currentStep = ref('group-ranking') // 'group-ranking', 'third-place', 'knockout'
 
-// Group data - will be fetched from API
-const groups = ref({})
 const loading = ref(true)
-
-// Third place team selection
-const selectedThirdPlaceTeams = ref([])
 
 // Get 3rd place teams from each group
 const getThirdPlaceTeams = () => {
   const thirdPlaceTeams = []
-  for (const [groupName, teams] of Object.entries(groups.value)) {
+  for (const [groupName, teams] of Object.entries(predictionStore.groups)) {
     if (teams.length >= 3) {
       thirdPlaceTeams.push({
         team: teams[2],
@@ -28,31 +26,22 @@ const getThirdPlaceTeams = () => {
   return thirdPlaceTeams
 }
 
-// Toggle selection of 3rd place team
-const toggleThirdPlaceTeam = (teamData) => {
-  const index = selectedThirdPlaceTeams.value.findIndex(
-    t => t.team.teamName === teamData.team.teamName
-  )
-  if (index > -1) {
-    selectedThirdPlaceTeams.value.splice(index, 1)
-  } else if (selectedThirdPlaceTeams.value.length < 8) {
-    selectedThirdPlaceTeams.value.push(teamData)
-  }
-}
-
-// Check if team is selected
-const isSelected = (teamData) => {
-  return selectedThirdPlaceTeams.value.some(
-    t => t.team.teamName === teamData.team.teamName
-  )
-}
-
 // Load group data
 onMounted(async () => {
   try {
     const response = await fetch('https://world-cup-yzg0.onrender.com/api/groups')
     const data = await response.json()
-    groups.value = data
+    // Transform array into object keyed by group name
+    const groupedData = {}
+    data.forEach(team => {
+      const groupName = team.groupName
+      if (!groupedData[groupName]) {
+        groupedData[groupName] = []
+      }
+      groupedData[groupName].push(team)
+    })
+    predictionStore.setGroups(groupedData)
+    console.log(predictionStore.groups)
     loading.value = false
   } catch (error) {
     console.error('Failed to load groups:', error)
@@ -114,45 +103,8 @@ const teamCrests = {
 
 // Format group name
 const formatGroupName = (groupName) => {
+  if (!groupName || typeof groupName !== 'string') return groupName
   return groupName.replace('_', ' ')
-}
-
-// Drag and drop handlers
-const draggedItem = ref(null)
-const draggedFromGroup = ref(null)
-
-const onDragStart = (event, team, groupName) => {
-  draggedItem.value = team
-  draggedFromGroup.value = groupName
-  event.dataTransfer.effectAllowed = 'move'
-}
-
-const onDragOver = (event) => {
-  event.preventDefault()
-  event.dataTransfer.dropEffect = 'move'
-}
-
-const onDrop = (event, targetGroup) => {
-  event.preventDefault()
-  if (draggedItem.value && draggedFromGroup.value) {
-    // Move team from source group to target group
-    const sourceTeams = groups.value[draggedFromGroup.value]
-    const targetTeams = groups.value[targetGroup]
-    
-    const teamIndex = sourceTeams.findIndex(t => t.teamName === draggedItem.value.teamName)
-    if (teamIndex > -1) {
-      const [team] = sourceTeams.splice(teamIndex, 1)
-      targetTeams.push(team)
-    }
-    
-    draggedItem.value = null
-    draggedFromGroup.value = null
-  }
-}
-
-const onDragEnd = () => {
-  draggedItem.value = null
-  draggedFromGroup.value = null
 }
 
 // Continue to next step
@@ -161,12 +113,11 @@ const continueToThirdPlace = () => {
 }
 
 const continueToKnockout = () => {
-  if (selectedThirdPlaceTeams.value.length !== 8) {
+  if (predictionStore.selectedThirdPlaceTeams.length !== 8) {
     alert('Please select exactly 8 third-place teams')
     return
   }
   currentStep.value = 'knockout'
-  // TODO: Pass predictions to knockout page
   router.push('/knockouts')
 }
 </script>
@@ -188,33 +139,44 @@ const continueToKnockout = () => {
       
       <div class="groups-grid">
         <div 
-          v-for="(teams, groupName) in groups" 
+          v-for="(teams, groupName) in predictionStore.groups" 
           :key="groupName"
           class="group-card"
-          @dragover="onDragOver"
-          @drop="onDrop($event, groupName)"
         >
           <h3>{{ formatGroupName(groupName) }}</h3>
-          <div class="teams-list">
-            <div 
-              v-for="(team, index) in teams" 
-              :key="team.teamName"
-              class="team-item"
-              draggable="true"
-              @dragstart="onDragStart($event, team, groupName)"
-              @dragend="onDragEnd"
-            >
-              <div class="drag-handle">☰</div>
-              <div class="position-badge">{{ index + 1 }}</div>
-              <img 
-                :src="teamCrests[team.teamName] || ''" 
-                :alt="team.teamName"
+          <draggable
+          v-model="predictionStore.groups[groupName]"
+          item-key="teamName"
+          :group="{
+            name: groupName,
+            pull: false,
+            put: false
+          }"
+          animation="200"
+          ghost-class="ghost"
+          chosen-class="chosen"
+          handle=".drag-handle"
+          :swapThreshold="0.65"
+          class="teams-list"
+          tag="div"
+        >
+          <template #item="{ element, index }">
+            <div class="team-item">
+              <div class="position-badge"
+              :class="{
+                first: index === 0,
+                second: index === 1,
+                third: index === 2
+              }">{{ index + 1 }}</div>
+              <img
+                :src="teamCrests[element.teamName]"
                 class="team-crest"
-                @error="$event.target.style.display = 'none'"
               />
-              <span class="team-name">{{ team.teamName }}</span>
+              <span class="team-name">{{ element.teamName }}</span>
+              <div class="drag-handle">☰</div>
             </div>
-          </div>
+          </template>
+        </draggable>
         </div>
       </div>
       
@@ -227,24 +189,24 @@ const continueToKnockout = () => {
     <div v-else-if="currentStep === 'third-place'" class="step-container">
       <h2>Step 2: Select 8 Third-Place Teams</h2>
       <p class="step-description">
-        Select 8 of the 16 third-place teams to advance to the Round of 32
+        Select 8 of the 12 third-place teams to advance to the Round of 32
       </p>
       
       <div class="selection-counter">
-        Selected: {{ selectedThirdPlaceTeams.length }} / 8
+        Selected: {{ predictionStore.selectedThirdPlaceTeams.length }} / 8
       </div>
       
       <div class="third-place-grid">
         <div 
           v-for="teamData in getThirdPlaceTeams()" 
           :key="teamData.team.teamName"
-          :class="['third-place-card', { selected: isSelected(teamData) }]"
-          @click="toggleThirdPlaceTeam(teamData)"
+          :class="['third-place-card', { selected: predictionStore.isSelected(teamData) }]"
+          @click="predictionStore.toggleThirdPlaceTeam(teamData)"
         >
           <div class="card-header">
             <span class="group-label">{{ formatGroupName(teamData.groupName) }}</span>
             <div class="checkbox">
-              <span v-if="isSelected(teamData)">✓</span>
+              <span v-if="predictionStore.isSelected(teamData)">✓</span>
             </div>
           </div>
           <div class="team-info">
@@ -261,7 +223,7 @@ const continueToKnockout = () => {
       
       <button 
         class="continue-button" 
-        :disabled="selectedThirdPlaceTeams.length !== 8"
+        :disabled="predictionStore.selectedThirdPlaceTeams.length !== 8"
         @click="continueToKnockout"
       >
         Continue to Knockout Bracket →
@@ -350,24 +312,11 @@ h1 {
   background: #f8f9fa;
   border-radius: 8px;
   cursor: move;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
 }
 
 .team-item:hover {
   background: #e9ecef;
-  transform: translateX(4px);
-}
-
-.team-item.dragging {
-  opacity: 0.5;
-  background: #dee2e6;
-}
-
-.drag-handle {
-  color: #999;
-  font-size: 18px;
-  cursor: grab;
-  user-select: none;
 }
 
 .position-badge {
@@ -396,6 +345,14 @@ h1 {
   font-size: 14px;
   font-weight: 500;
   flex: 1;
+}
+
+.drag-handle {
+  color: #999;
+  font-size: 18px;
+  cursor: grab;
+  user-select: none;
+  flex-shrink: 0;
 }
 
 .continue-button {
@@ -499,13 +456,12 @@ h1 {
   gap: 12px;
 }
 
-.team-crest {
+.team-info .team-crest {
   width: 32px;
   height: 32px;
-  object-fit: contain;
 }
 
-.team-name {
+.team-info .team-name {
   color: #333;
   font-size: 14px;
   font-weight: 600;
@@ -520,5 +476,42 @@ h1 {
 .continue-button:disabled:hover {
   transform: none;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.ghost {
+  opacity: 0.4;
+  background: #dbe4ff;
+}
+
+.chosen {
+  transform: scale(1.03);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.position-badge.first {
+  background: gold;
+}
+
+.position-badge.second {
+  background: silver;
+}
+
+.position-badge.third {
+  background: #cd7f32;
+}
+.sortable-chosen {
+  cursor: grabbing;
+}
+
+.sortable-drag {
+  opacity: 0.8;
+}
+
+.sortable-ghost {
+  opacity: 0.3;
+}
+
+.sortable-fallback {
+  transform: rotate(2deg);
 }
 </style>
