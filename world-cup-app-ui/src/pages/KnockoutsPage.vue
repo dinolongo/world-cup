@@ -4,35 +4,49 @@ import matchStadiumData from '../data/match-stadium.json'
 import stadiumData from '../data/stadium-data.json'
 import { usePredictionStore } from '../stores/predictionStore'
 import KnockoutMatchCard from '../components/KnockoutMatchCard.vue'
+import { useBracketConnectors } from '../composables/useBracketConnectors'
+import { useKnockoutPredictions } from '../composables/useKnockoutPredictions'
+import { KNOCKOUT_ROUNDS, TOTAL_KNOCKOUT_MATCHES } from '../util/constants'
 
 const predictionStore = usePredictionStore()
 
 // Reactive state
 const knockoutMatches = ref([])
-const stadiums = ref([])
+const stadiumMap = ref({})
 const loading = ref(true)
-const cardRefs = ref({})
 const leftBracketEl = ref(null)
-const leftConnectorPaths = ref([])
 const rightBracketEl = ref(null)
-const rightConnectorPaths = ref([])
-const leftSvgViewBox = ref('0 0 0 0')
-const rightSvgViewBox = ref('0 0 0 0')
+const bracketContainerEl = ref(null)
 
-// Get third-place seeding lookup
-const thirdPlaceSeeding = computed(() => predictionStore.getThirdPlaceSeeding())
+// Use composables
+const {
+  leftConnectorPaths,
+  rightConnectorPaths,
+  centerConnectorPaths,
+  leftSvgViewBox,
+  rightSvgViewBox,
+  centerSvgViewBox,
+  setCardRef,
+  recalculatePaths
+} = useBracketConnectors(leftBracketEl, rightBracketEl, bracketContainerEl)
+
+const {
+  knockoutPredictions,
+  knockoutLosers,
+  finalWinner,
+  finalRunnerUp,
+  thirdPlaceWinner,
+  getWinnerCrest,
+  getTeamName,
+  selectWinner
+} = useKnockoutPredictions(knockoutMatches, predictionStore)
 
 // Load data
 onMounted(async () => {
   knockoutMatches.value = matchStadiumData.matches.filter(match => 
-    match.round === 'Round of 32' || 
-    match.round === 'Round of 16' || 
-    match.round === 'Quarter-final' || 
-    match.round === 'Semi-final' || 
-    match.round === 'Match for third place' || 
-    match.round === 'Final'
+    KNOCKOUT_ROUNDS.has(match.round)
   )
-  stadiums.value = stadiumData.stadiums
+  stadiumMap.value = new Map(stadiumData.stadiums.map(s => [s.name, s]))
   loading.value = false
 
   await nextTick()
@@ -45,28 +59,32 @@ onUnmounted(() => {
   window.removeEventListener('resize', recalculatePaths)
 })
 
-const setCardRef = (el, matchNum) => {
-  if (el) cardRefs.value[matchNum] = el.$el  // $el gives the root DOM node
-}
+const leftRoundOf32MatchNumbers = [
+  74, 77, 73, 75, 83, 84, 81, 82
+]
+const rightRoundOf32MatchNumbers = [
+  76, 78, 79, 80, 86, 88,85, 87 
+]
+const leftRoundOf16MatchNumbers = [
+  89, 90, 93, 94
+]
+const rightRoundOf16MatchNumbers = [
+  91, 92, 95, 96
+]
+const leftQuarterFinalMatchNumbers = [97, 98]
+const rightQuarterFinalMatchNumbers = [99, 100]
 
-// Split matches into left and right brackets
-const leftBracketMatches = computed(() => {
-  return knockoutMatches.value.filter(match => 
-    match.num >= 73 && match.num <= 80 || // Ro32 left
-    match.num >= 89 && match.num <= 92 || // Ro16 left
-    match.num >= 97 && match.num <= 98 || // QF left
-    match.num === 101 // SF left
-  )
-})
+// Sorted matches by bracket slot for proper connector alignment
+const matchesForNumbers = (nums) =>
+  computed(() => nums.map(num => knockoutMatches.value.find(m => m.num === num)).filter(Boolean))
 
-const rightBracketMatches = computed(() => {
-  return knockoutMatches.value.filter(match => 
-    match.num >= 81 && match.num <= 88 || // Ro32 right
-    match.num >= 93 && match.num <= 96 || // Ro16 right
-    match.num >= 99 && match.num <= 100 || // QF right
-    match.num === 102 // SF right
-  )
-})
+const leftRo32Matches = matchesForNumbers(leftRoundOf32MatchNumbers)
+const leftRo16Matches = matchesForNumbers(leftRoundOf16MatchNumbers)
+const leftQFMatches = matchesForNumbers(leftQuarterFinalMatchNumbers)
+const rightRo32Matches = matchesForNumbers(rightRoundOf32MatchNumbers)
+const rightRo16Matches = matchesForNumbers(rightRoundOf16MatchNumbers)
+const rightQFMatches = matchesForNumbers(rightQuarterFinalMatchNumbers)
+
 
 const finalMatch = computed(() => {
   return knockoutMatches.value.find(match => match.round === 'Final')
@@ -76,208 +94,63 @@ const thirdPlaceMatch = computed(() => {
   return knockoutMatches.value.find(match => match.round === 'Match for third place')
 })
 
+const sf101Match = computed(() => {
+  return knockoutMatches.value.find(match => match.num === 101)
+})
+
+const sf102Match = computed(() => {
+  return knockoutMatches.value.find(match => match.num === 102)
+})
+
 // Get stadium details by name
-const getStadium = (groundName) => {
-  return stadiums.value.find(stadium => stadium.name === groundName) || null
+const getStadium = (groundName) => stadiumMap.value.get(groundName) ?? null
+
+const allPredictionsMade = computed(() =>
+  Object.keys(knockoutPredictions.value).length === TOTAL_KNOCKOUT_MATCHES
+)
+
+const saveBracket = () => {
+  console.log('Saving bracket...')
 }
 
-// Format date for display
-const formatDate = (dateStr) => {
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-}
-
-// Format time for display
-const formatTime = (timeStr) => {
-  return timeStr
-}
-
-// Get team name from code, using predictions if available
-const getTeamName = (teamCode, matchNum, opponentCode) => {
-  if (!teamCode) return 'TBD'
-  
-  // Handle winner references (W74, W77, etc.)
-  if (teamCode.startsWith('W')) {
-    const sourceMatchNum = teamCode.substring(1)
-    // Check if we have a prediction for this match
-    if (knockoutPredictions.value[sourceMatchNum]) {
-      return knockoutPredictions.value[sourceMatchNum]
-    }
-    return `Winner of Match ${sourceMatchNum}`
-  }
-  
-  // Handle loser references (L101, L102, etc.)
-  if (teamCode.startsWith('L')) {
-    const matchNum = teamCode.substring(1)
-    return `Loser of Match ${matchNum}`
-  }
-  
-  // Handle 3rd place team codes with multiple groups (3A/B/C/D/F, etc.)
-  if (teamCode.includes('/')) {
-    // Use seeding lookup to determine which third-place team plays here
-    if (thirdPlaceSeeding.value && opponentCode) {
-      // The opponent code (e.g., "1E") tells us which position this match is for
-      // Look up which third-place team code is assigned to this position
-      const thirdPlaceCode = thirdPlaceSeeding.value[opponentCode]
-      if (thirdPlaceCode) {
-        const teamName = predictionStore.getTeamFromCode(thirdPlaceCode)
-        if (teamName) return teamName
-      }
-    }
-    return 'Best 3rd Place Team'
-  }
-  
-  // Try to get predicted team from store
-  const predictedTeam = predictionStore.getTeamFromCode(teamCode)
-  if (predictedTeam) return predictedTeam
-  
-  // Fallback to formatted placeholder
-  return formatTeamNamePlaceholder(teamCode)
-}
-
-// Format team name placeholder when no prediction available
-const formatTeamNamePlaceholder = (teamCode) => {
-  // Handle group position codes (1A, 2B, 3C, etc.)
-  const groupMatch = teamCode.match(/^(\d)([A-L])$/)
-  if (groupMatch) {
-    const position = groupMatch[1]
-    const group = groupMatch[2]
-    const positionText = position === '1' ? 'Winner' : position === '2' ? 'Runner-up' : '3rd Place'
-    return `${positionText} of Group ${group}`
-  }
-  
-  return teamCode
-}
-
-
-// Store for knockout predictions
-const knockoutPredictions = ref({})
-
-const getRelativeRect = (el, container) => {
-  const elRect = el.getBoundingClientRect()
-  const containerRect = container.getBoundingClientRect()
-  return {
-    top: elRect.top - containerRect.top,
-    bottom: elRect.bottom - containerRect.top,
-    left: elRect.left - containerRect.left,
-    right: elRect.right - containerRect.left,
-    midY: (elRect.top + elRect.bottom) / 2 - containerRect.top
-  }
-}
-
-
-const leftBracketPairs = [
-  { sources: [73, 74], target: 89 },
-  { sources: [75, 76], target: 90 },
-  { sources: [77, 78], target: 91 },
-  { sources: [79, 80], target: 92 },
-  { sources: [89, 90], target: 97 },
-  { sources: [91, 92], target: 98 },
-  { sources: [97, 98], target: 101 },
-]
-
-const rightBracketPairs = [
-  { sources: [81, 82], target: 93 },
-  { sources: [83, 84], target: 94 },
-  { sources: [85, 86], target: 95 },
-  { sources: [87, 88], target: 96 },
-  { sources: [93, 94], target: 99 },
-  { sources: [95, 96], target: 100 },
-  { sources: [99, 100], target: 102 },
-]
-
-const calculatePaths = (pairs, containerEl, direction = 'left') => {
-  if (!containerEl) return []
-  const paths = []
-
-  for (const pair of pairs) {
-    const el1 = cardRefs.value[pair.sources[0]]
-    const el2 = cardRefs.value[pair.sources[1]]
-    const elTarget = cardRefs.value[pair.target]
-    if (!el1 || !el2 || !elTarget) continue
-
-    const r1 = getRelativeRect(el1, containerEl)
-    const r2 = getRelativeRect(el2, containerEl)
-    const rT = getRelativeRect(elTarget, containerEl)
-
-    // For left bracket: lines exit right edge of source, enter left edge of target
-    // For right bracket: lines exit left edge of source, enter right edge of target
-    const x1 = direction === 'left' ? r1.right : r1.left
-    const x2 = direction === 'left' ? r2.right : r2.left
-    const xT = direction === 'left' ? rT.left : rT.right
-
-    const y1 = r1.midY
-    const y2 = r2.midY
-    const yT = rT.midY
-    const midY = (y1 + y2) / 2
-    const midX = (x1 + xT) / 2
-
-    // From card1: go horizontal to midX, drop to midY
-    // From card2: go horizontal to midX, rise to midY  
-    // Then from midY go horizontal into target card
-    const d = `
-      M ${x1} ${y1} H ${midX} V ${midY}
-      M ${x2} ${y2} H ${midX} V ${midY}
-      M ${midX} ${midY} H ${xT}
-    `.trim()
-
-    paths.push({ id: `${pair.sources[0]}-${pair.sources[1]}`, d })
-  }
-
-  return paths
-}
-
-const recalculatePaths = () => {
-  if (leftBracketEl.value) {
-    const r = leftBracketEl.value.getBoundingClientRect()
-    leftSvgViewBox.value = `0 0 ${r.width} ${r.height}`
-  }
-  if (rightBracketEl.value) {
-    const r = rightBracketEl.value.getBoundingClientRect()
-    rightSvgViewBox.value = `0 0 ${r.width} ${r.height}`
-  }
-  leftConnectorPaths.value = calculatePaths(leftBracketPairs, leftBracketEl.value, 'left')
-  rightConnectorPaths.value = calculatePaths(rightBracketPairs, rightBracketEl.value, 'right')
-}
-
-// Handle team selection with auto-advance
-const selectWinner = (match, team) => {
-  // Store the winner for this match
-  knockoutPredictions.value[match.num] = team
-  
-  // Load bracket advancement data
-  import('../data/bracket-advancement.json').then(data => {
-    const advancement = data.default || data
-    
-    // Find which matches this winner advances to
-    const advancesTo = advancement.forward[match.num]
-    if (advancesTo) {
-      // Update the team in the advancing match
-      const advancingMatch = knockoutMatches.value.find(m => m.num === advancesTo.matchNum)
-      if (advancingMatch) {
-        if (advancesTo.position === 'team1') {
-          advancingMatch.team1 = `W${match.num}`
-        } else if (advancesTo.position === 'team2') {
-          advancingMatch.team2 = `W${match.num}`
-        }
-      }
-    }
-  })
-}
 </script>
 
 <template>
   <div class="knockouts-page">
-    <h1>World Cup 2026 - Knockout Stage</h1>
+    <v-row>
+      <v-col cols="10">
+        <h1>World Cup 2026 - Knockout Stage</h1>
+      </v-col>
+      <v-col cols="2">
+        <v-btn
+          :disabled="!allPredictionsMade"
+          @click="saveBracket"
+        >
+          Save My Bracket
+        </v-btn>
+      </v-col>
+    </v-row>
     
     <div v-if="loading" class="loading">
       Loading bracket...
     </div>
     
-    <div v-else class="bracket-container">
+    <div v-else class="bracket-container" ref="bracketContainerEl">
+      <!-- Center SVG Layer for all center connectors -->
+      <svg class="center-connector-svg" ref="centerSvg" :viewBox="centerSvgViewBox">
+        <path 
+          v-for="path in centerConnectorPaths" 
+          :key="path.id"
+          :d="path.d"
+          fill="none"
+          stroke="rgba(255,255,255,0.5)"
+          stroke-width="2"
+        />
+      </svg>
+
       <!-- Left Bracket -->
       <div class="bracket-side left-bracket" ref="leftBracketEl">
-        <svg class="connector-svg" ref="leftSvg" viewBox="leftSvgViewBox">
+        <svg class="connector-svg" ref="leftSvg" :viewBox="leftSvgViewBox">
           <path 
             v-for="path in leftConnectorPaths" 
             :key="path.id"
@@ -292,9 +165,10 @@ const selectWinner = (match, team) => {
           <h3>Round of 32</h3>
           <div class="matches">
             <KnockoutMatchCard
-              v-for="match in leftBracketMatches.filter(m => m.round === 'Round of 32')"
+              v-for="match in leftRo32Matches"
               :key="match.num"
               :match="match"
+              :match-num="match.num"
               :team1-name="getTeamName(match.team1, match.num, match.team2)"
               :team2-name="getTeamName(match.team2, match.num, match.team1)"
               :stadium="getStadium(match.ground)"
@@ -310,9 +184,10 @@ const selectWinner = (match, team) => {
           <h3>Round of 16</h3>
           <div class="matches">
             <KnockoutMatchCard
-              v-for="match in leftBracketMatches.filter(m => m.round === 'Round of 16')"
+              v-for="match in leftRo16Matches"
               :key="match.num"
               :match="match"
+              :match-num="match.num"
               :team1-name="getTeamName(match.team1, match.num, match.team2)"
               :team2-name="getTeamName(match.team2, match.num, match.team1)"
               :stadium="getStadium(match.ground)"
@@ -327,26 +202,10 @@ const selectWinner = (match, team) => {
           <h3>Quarter Finals</h3>
           <div class="matches">
             <KnockoutMatchCard
-              v-for="match in leftBracketMatches.filter(m => m.round === 'Quarter-final')"
+              v-for="match in leftQFMatches"
               :key="match.num"
               :match="match"
-              :team1-name="getTeamName(match.team1, match.num, match.team2)"
-              :team2-name="getTeamName(match.team2, match.num, match.team1)"
-              :stadium="getStadium(match.ground)"
-              @select-winner="selectWinner(match, $event)"
-              :ref="el => setCardRef(el, match.num)"
-            />
-          </div>
-        </div>
-
-        <!-- Semi Final -->
-        <div class="round-section">
-          <h3>Semi Final</h3>
-          <div class="matches">
-            <KnockoutMatchCard
-              v-for="match in leftBracketMatches.filter(m => m.round === 'Semi-final')"
-              :key="match.num"
-              :match="match"
+              :match-num="match.num"
               :team1-name="getTeamName(match.team1, match.num, match.team2)"
               :team2-name="getTeamName(match.team2, match.num, match.team1)"
               :stadium="getStadium(match.ground)"
@@ -357,24 +216,44 @@ const selectWinner = (match, team) => {
         </div>
       </div>
 
-      <!-- Center Section (Final & Third Place) -->
-      <div class="center-section">
-        <div v-if="thirdPlaceMatch" class="third-place-section">
-          <h2>Third Place Match</h2>
-          <KnockoutMatchCard
-            :match="thirdPlaceMatch"
-            :team1-name="getTeamName(thirdPlaceMatch.team1, thirdPlaceMatch.num, thirdPlaceMatch.team2)"
-            :team2-name="getTeamName(thirdPlaceMatch.team2, thirdPlaceMatch.num, thirdPlaceMatch.team1)"
-            :stadium="getStadium(thirdPlaceMatch.ground)"
-            @select-winner="selectWinner(thirdPlaceMatch, $event)"
-            :ref="el => setCardRef(el, thirdPlaceMatch.num)"
-          />
-        </div>
-
-        <div v-if="finalMatch" class="final-section">
+      <!-- Center Diamond -->
+      <div class="center-diamond">
+        <!-- Final -->
+        <div class="diamond-row final-row">
+           <div v-if="finalWinner" class="winner-message">
+            <img 
+              v-if="getWinnerCrest(finalWinner)" 
+              :src="getWinnerCrest(finalWinner)" 
+              class="winner-flag"
+              alt=""
+            />
+            <span class="winner-text">{{ finalWinner }} wins the 2026 World Cup!</span>
+          </div>
+          <div v-if="finalRunnerUp" class="silver-message">
+            <img 
+              v-if="getWinnerCrest(finalRunnerUp)" 
+              :src="getWinnerCrest(finalRunnerUp)" 
+              class="silver-flag"
+              alt=""
+            />
+            <span class="silver-text">{{ finalRunnerUp }} is the runner-up</span>
+          </div>
+          <div v-if="thirdPlaceWinner" class="bronze-message" >
+            <img 
+              v-if="getWinnerCrest(thirdPlaceWinner)" 
+              :src="getWinnerCrest(thirdPlaceWinner)" 
+              class="bronze-flag"
+              alt=""
+            />
+            <span class="bronze-text">{{ thirdPlaceWinner }} finishes 3rd</span>
+          </div>
           <h2 class="final-title">Final</h2>
+          <!-- Winner Message -->
+         
           <KnockoutMatchCard
+            v-if="finalMatch"
             :match="finalMatch"
+            :match-num="finalMatch.num"
             :team1-name="getTeamName(finalMatch.team1, finalMatch.num, finalMatch.team2)"
             :team2-name="getTeamName(finalMatch.team2, finalMatch.num, finalMatch.team1)"
             :stadium="getStadium(finalMatch.ground)"
@@ -382,6 +261,52 @@ const selectWinner = (match, team) => {
             class="final-card"
             :ref="el => setCardRef(el, finalMatch.num)"
           />
+        </div>
+
+        <!-- Semi Finals -->
+        <div class="diamond-row semi-finals-row">
+          <div class="semi-final-left">
+            <h3>Semi Final</h3>
+            <KnockoutMatchCard
+              v-if="sf101Match"
+              :match="sf101Match"
+              :match-num="sf101Match.num"
+              :team1-name="getTeamName(sf101Match.team1, sf101Match.num, sf101Match.team2)"
+              :team2-name="getTeamName(sf101Match.team2, sf101Match.num, sf101Match.team1)"
+              :stadium="getStadium(sf101Match.ground)"
+              @select-winner="selectWinner(sf101Match, $event)"
+              :ref="el => setCardRef(el, sf101Match.num)"
+            />
+          </div>
+          <div class="semi-final-right">
+            <h3>Semi Final</h3>
+            <KnockoutMatchCard
+              v-if="sf102Match"
+              :match="sf102Match"
+              :match-num="sf102Match.num"
+              :team1-name="getTeamName(sf102Match.team1, sf102Match.num, sf102Match.team2)"
+              :team2-name="getTeamName(sf102Match.team2, sf102Match.num, sf102Match.team1)"
+              :stadium="getStadium(sf102Match.ground)"
+              @select-winner="selectWinner(sf102Match, $event)"
+              :ref="el => setCardRef(el, sf102Match.num)"
+            />
+          </div>
+        </div>
+
+        <!-- Third Place -->
+        <div class="diamond-row third-place-row">
+          <h2>Third Place Match</h2>
+          <KnockoutMatchCard
+            v-if="thirdPlaceMatch"
+            :match="thirdPlaceMatch"
+            :match-num="thirdPlaceMatch.num"
+            :team1-name="getTeamName(thirdPlaceMatch.team1, thirdPlaceMatch.num, thirdPlaceMatch.team2)"
+            :team2-name="getTeamName(thirdPlaceMatch.team2, thirdPlaceMatch.num, thirdPlaceMatch.team1)"
+            :stadium="getStadium(thirdPlaceMatch.ground)"
+            @select-winner="selectWinner(thirdPlaceMatch, $event)"
+            :ref="el => setCardRef(el, thirdPlaceMatch.num)"
+          />
+         
         </div>
       </div>
 
@@ -402,9 +327,10 @@ const selectWinner = (match, team) => {
           <h3>Round of 32</h3>
           <div class="matches">
             <KnockoutMatchCard
-              v-for="match in rightBracketMatches.filter(m => m.round === 'Round of 32')"
+              v-for="match in rightRo32Matches"
               :key="match.num"
               :match="match"
+              :match-num="match.num"
               :team1-name="getTeamName(match.team1, match.num, match.team2)"
               :team2-name="getTeamName(match.team2, match.num, match.team1)"
               :stadium="getStadium(match.ground)"
@@ -419,9 +345,10 @@ const selectWinner = (match, team) => {
           <h3>Round of 16</h3>
           <div class="matches">
             <KnockoutMatchCard
-              v-for="match in rightBracketMatches.filter(m => m.round === 'Round of 16')"
+              v-for="match in rightRo16Matches"
               :key="match.num"
               :match="match"
+              :match-num="match.num"
               :team1-name="getTeamName(match.team1, match.num, match.team2)"
               :team2-name="getTeamName(match.team2, match.num, match.team1)"
               :stadium="getStadium(match.ground)"
@@ -436,26 +363,10 @@ const selectWinner = (match, team) => {
           <h3>Quarter Finals</h3>
           <div class="matches">
             <KnockoutMatchCard
-              v-for="match in rightBracketMatches.filter(m => m.round === 'Quarter-final')"
+              v-for="match in rightQFMatches"
               :key="match.num"
               :match="match"
-              :team1-name="getTeamName(match.team1, match.num, match.team2)"
-              :team2-name="getTeamName(match.team2, match.num, match.team1)"
-              :stadium="getStadium(match.ground)"
-              @select-winner="selectWinner(match, $event)"
-              :ref="el => setCardRef(el, match.num)"
-            />
-          </div>
-        </div>
-
-        <!-- Semi Final -->
-        <div class="round-section">
-          <h3>Semi Final</h3>
-          <div class="matches">
-            <KnockoutMatchCard
-              v-for="match in rightBracketMatches.filter(m => m.round === 'Semi-final')"
-              :key="match.num"
-              :match="match"
+              :match-num="match.num"
               :team1-name="getTeamName(match.team1, match.num, match.team2)"
               :team2-name="getTeamName(match.team2, match.num, match.team1)"
               :stadium="getStadium(match.ground)"
@@ -494,6 +405,7 @@ h1 {
 }
 
 .bracket-container {
+  position: relative;
   display: flex;
   gap: 40px;
   width: 100%;
@@ -545,18 +457,49 @@ h1 {
   flex: 1;                         /* fills the full column height */
 }
 
-.center-section {
-  flex: 0 0 230px;
+.center-diamond {
+  flex: 0 0 200px;
   display: flex;
   flex-direction: column;
   gap: 32px;
   align-items: center;
   justify-content: center;
-  min-height: 100%;
 }
 
-.third-place-section h2,
-.final-section h2 {
+.center-connector-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 5;
+}
+
+.diamond-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.semi-finals-row {
+  display: flex;
+  flex-direction: row;
+  gap: 80px;
+  justify-content: center;
+  align-items: center;
+}
+
+.semi-final-left,
+.semi-final-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.diamond-row h2,
+.diamond-row h3 {
   color: white;
   font-size: 18px;
   font-weight: 600;
@@ -580,6 +523,115 @@ h1 {
   border-color: #ffc107;
   color: #f57c00;
 }
+
+.winner-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #ffd700 0%, #ffecb3 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(255, 215, 0, 0.4);
+  animation: celebrate 0.5s ease-out;
+}
+
+@keyframes celebrate {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.winner-flag {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.winner-text {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.silver-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(192, 192, 192, 0.4);
+  animation: celebrate 0.5s ease-out;
+  margin-bottom: 20px;
+}
+
+.silver-flag {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.silver-text {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.bronze-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #cd7f32 0%, #e6a86c 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(205, 127, 50, 0.4);
+  animation: celebrate 0.5s ease-out;
+  margin-bottom: 20px;
+}
+
+.bronze-flag {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.bronze-text {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.connector-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 1;
+}
+
 .right-bracket {
   flex-direction: row-reverse;
 }
@@ -594,21 +646,5 @@ h1 {
     flex-direction: column;
     align-items: center;
   }
-  
-  .center-section {
-    flex: none;
-    width: 100%;
-    max-width: 400px;
-  }
-}
-
-.connector-svg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  overflow: visible;
 }
 </style>

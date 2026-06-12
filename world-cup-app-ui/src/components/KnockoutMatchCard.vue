@@ -18,6 +18,10 @@ const props = defineProps({
   stadium: {
     type: Object,
     default: null
+  },
+  matchNum: {
+    type: Number,
+    default: null
   }
 })
 
@@ -44,6 +48,7 @@ const handleTeamClick = (team) => {
 <template>
   <div class="knockout-match-card">
     <div class="match-info">
+      <span class="match-number" v-if="matchNum">#{{ matchNum }}</span>
       <span class="date-time">{{ formatDate(match.date) }} • {{ formatTime(match.time) }}</span>
       <span class="stadium">{{ stadium?.name || match.ground }}</span>
       <span class="city">{{ stadium?.city || '' }}</span>
@@ -94,6 +99,12 @@ const handleTeamClick = (team) => {
   margin-bottom: 6px;
   font-size: 10px;
   color: #666;
+}
+
+.match-number {
+  font-weight: 700;
+  color: #667eea;
+  font-size: 11px;
 }
 
 .date-time {
