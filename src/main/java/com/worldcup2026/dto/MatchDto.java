@@ -38,6 +38,8 @@ public class MatchDto {
 
     private Integer awayScore;
 
+    private Match.MatchDuration duration;
+
     private String stage;
 
     private String group;

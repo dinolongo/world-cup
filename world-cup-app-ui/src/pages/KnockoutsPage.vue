@@ -6,13 +6,13 @@ import { usePredictionStore } from '../stores/predictionStore'
 import KnockoutMatchCard from '../components/KnockoutMatchCard.vue'
 import { useBracketConnectors } from '../composables/useBracketConnectors'
 import { useKnockoutPredictions } from '../composables/useKnockoutPredictions'
-import { KNOCKOUT_ROUNDS, TOTAL_KNOCKOUT_MATCHES } from '../util/constants'
+import { KNOCKOUT_ROUNDS, BRACKET_LAYOUT } from '../util/constants'
 
 const predictionStore = usePredictionStore()
 
 // Reactive state
 const knockoutMatches = ref([])
-const stadiumMap = ref({})
+const stadiumMap = new Map(stadiumData.stadiums.map(s => [s.name, s]))
 const loading = ref(true)
 const leftBracketEl = ref(null)
 const rightBracketEl = ref(null)
@@ -31,22 +31,24 @@ const {
 } = useBracketConnectors(leftBracketEl, rightBracketEl, bracketContainerEl)
 
 const {
-  knockoutPredictions,
-  knockoutLosers,
   finalWinner,
   finalRunnerUp,
   thirdPlaceWinner,
-  getWinnerCrest,
+  getTeamCrest,
   getTeamName,
-  selectWinner
+  selectWinner,
+  finalMatch,
+  thirdPlaceMatch,
+  sf101Match,
+  sf102Match,
+  allPredictionsMade,
+  buildPayload
 } = useKnockoutPredictions(knockoutMatches, predictionStore)
 
-// Load data
 onMounted(async () => {
   knockoutMatches.value = matchStadiumData.matches.filter(match => 
     KNOCKOUT_ROUNDS.has(match.round)
   )
-  stadiumMap.value = new Map(stadiumData.stadiums.map(s => [s.name, s]))
   loading.value = false
 
   await nextTick()
@@ -59,58 +61,21 @@ onUnmounted(() => {
   window.removeEventListener('resize', recalculatePaths)
 })
 
-const leftRoundOf32MatchNumbers = [
-  74, 77, 73, 75, 83, 84, 81, 82
-]
-const rightRoundOf32MatchNumbers = [
-  76, 78, 79, 80, 86, 88,85, 87 
-]
-const leftRoundOf16MatchNumbers = [
-  89, 90, 93, 94
-]
-const rightRoundOf16MatchNumbers = [
-  91, 92, 95, 96
-]
-const leftQuarterFinalMatchNumbers = [97, 98]
-const rightQuarterFinalMatchNumbers = [99, 100]
-
-// Sorted matches by bracket slot for proper connector alignment
 const matchesForNumbers = (nums) =>
   computed(() => nums.map(num => knockoutMatches.value.find(m => m.num === num)).filter(Boolean))
 
-const leftRo32Matches = matchesForNumbers(leftRoundOf32MatchNumbers)
-const leftRo16Matches = matchesForNumbers(leftRoundOf16MatchNumbers)
-const leftQFMatches = matchesForNumbers(leftQuarterFinalMatchNumbers)
-const rightRo32Matches = matchesForNumbers(rightRoundOf32MatchNumbers)
-const rightRo16Matches = matchesForNumbers(rightRoundOf16MatchNumbers)
-const rightQFMatches = matchesForNumbers(rightQuarterFinalMatchNumbers)
+const leftRo32Matches  = matchesForNumbers(BRACKET_LAYOUT.left.ro32)
+const leftRo16Matches  = matchesForNumbers(BRACKET_LAYOUT.left.ro16)
+const leftQFMatches    = matchesForNumbers(BRACKET_LAYOUT.left.qf)
+const rightRo32Matches = matchesForNumbers(BRACKET_LAYOUT.right.ro32)
+const rightRo16Matches = matchesForNumbers(BRACKET_LAYOUT.right.ro16)
+const rightQFMatches   = matchesForNumbers(BRACKET_LAYOUT.right.qf)
 
-
-const finalMatch = computed(() => {
-  return knockoutMatches.value.find(match => match.round === 'Final')
-})
-
-const thirdPlaceMatch = computed(() => {
-  return knockoutMatches.value.find(match => match.round === 'Match for third place')
-})
-
-const sf101Match = computed(() => {
-  return knockoutMatches.value.find(match => match.num === 101)
-})
-
-const sf102Match = computed(() => {
-  return knockoutMatches.value.find(match => match.num === 102)
-})
-
-// Get stadium details by name
-const getStadium = (groundName) => stadiumMap.value.get(groundName) ?? null
-
-const allPredictionsMade = computed(() =>
-  Object.keys(knockoutPredictions.value).length === TOTAL_KNOCKOUT_MATCHES
-)
+const getStadium = (groundName) => stadiumMap.get(groundName) ?? null
 
 const saveBracket = () => {
-  console.log('Saving bracket...')
+  const payload = buildPayload()
+  console.log('Saving bracket...', payload)
 }
 
 </script>
@@ -122,8 +87,11 @@ const saveBracket = () => {
         <h1>World Cup 2026 - Knockout Stage</h1>
       </v-col>
       <v-col cols="2">
-        <v-btn
+        <!-- <v-btn
           :disabled="!allPredictionsMade"
+          @click="saveBracket"
+        > -->
+           <v-btn
           @click="saveBracket"
         >
           Save My Bracket
@@ -222,8 +190,8 @@ const saveBracket = () => {
         <div class="diamond-row final-row">
            <div v-if="finalWinner" class="winner-message">
             <img 
-              v-if="getWinnerCrest(finalWinner)" 
-              :src="getWinnerCrest(finalWinner)" 
+              v-if="getTeamCrest(finalWinner)" 
+              :src="getTeamCrest(finalWinner)" 
               class="winner-flag"
               alt=""
             />
@@ -231,8 +199,8 @@ const saveBracket = () => {
           </div>
           <div v-if="finalRunnerUp" class="silver-message">
             <img 
-              v-if="getWinnerCrest(finalRunnerUp)" 
-              :src="getWinnerCrest(finalRunnerUp)" 
+              v-if="getTeamCrest(finalRunnerUp)" 
+              :src="getTeamCrest(finalRunnerUp)" 
               class="silver-flag"
               alt=""
             />
@@ -240,8 +208,8 @@ const saveBracket = () => {
           </div>
           <div v-if="thirdPlaceWinner" class="bronze-message" >
             <img 
-              v-if="getWinnerCrest(thirdPlaceWinner)" 
-              :src="getWinnerCrest(thirdPlaceWinner)" 
+              v-if="getTeamCrest(thirdPlaceWinner)" 
+              :src="getTeamCrest(thirdPlaceWinner)" 
               class="bronze-flag"
               alt=""
             />

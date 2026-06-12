@@ -1,113 +1,41 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import draggable from 'vuedraggable'
 import { usePredictionStore } from '../stores/predictionStore'
+import { teamCrests } from '../util/constants'
 
 const router = useRouter()
 const predictionStore = usePredictionStore()
 
-// Step management
-const currentStep = ref('group-ranking') // 'group-ranking', 'third-place', 'knockout'
-
+const currentStep = ref('group-ranking')
 const loading = ref(true)
 
-// Get 3rd place teams from each group
-const getThirdPlaceTeams = () => {
-  const thirdPlaceTeams = []
-  for (const [groupName, teams] of Object.entries(predictionStore.groups)) {
-    if (teams.length >= 3) {
-      thirdPlaceTeams.push({
-        team: teams[2],
-        groupName: groupName
-      })
-    }
-  }
-  return thirdPlaceTeams
-}
-
-// Load group data
 onMounted(async () => {
   try {
     const response = await fetch('https://world-cup-yzg0.onrender.com/api/groups')
     const data = await response.json()
-    // Transform array into object keyed by group name
     const groupedData = {}
     data.forEach(team => {
-      const groupName = team.groupName
-      if (!groupedData[groupName]) {
-        groupedData[groupName] = []
-      }
-      groupedData[groupName].push(team)
+      if (!groupedData[team.groupName]) groupedData[team.groupName] = []
+      groupedData[team.groupName].push(team)
     })
     predictionStore.setGroups(groupedData)
-    console.log(predictionStore.groups)
-    loading.value = false
   } catch (error) {
     console.error('Failed to load groups:', error)
+  } finally {
     loading.value = false
   }
 })
 
-// Team crest map (same as GroupsPage)
-const teamCrests = {
-  'Uruguay': 'https://crests.football-data.org/758.svg',
-  'Germany': 'https://crests.football-data.org/759.svg',
-  'Spain': 'https://crests.football-data.org/760.svg',
-  'Paraguay': 'https://crests.football-data.org/761.svg',
-  'Argentina': 'https://crests.football-data.org/762.png',
-  'Ghana': 'https://crests.football-data.org/ghana.svg',
-  'Brazil': 'https://crests.football-data.org/764.svg',
-  'Portugal': 'https://crests.football-data.org/765.svg',
-  'Japan': 'https://crests.football-data.org/766.svg',
-  'Mexico': 'https://crests.football-data.org/769.svg',
-  'England': 'https://crests.football-data.org/770.svg',
-  'United States': 'https://crests.football-data.org/usa.svg',
-  'South Korea': 'https://crests.football-data.org/772.png',
-  'France': 'https://crests.football-data.org/773.svg',
-  'South Africa': 'https://crests.football-data.org/9396.svg',
-  'Canada': 'https://crests.football-data.org/canada.svg',
-  'Qatar': 'https://crests.football-data.org/8030.svg',
-  'Switzerland': 'https://crests.football-data.org/788.svg',
-  'Morocco': 'https://crests.football-data.org/morocco.svg',
-  'Australia': 'https://crests.football-data.org/779.svg',
-  'Netherlands': 'https://crests.football-data.org/8601.svg',
-  'Sweden': 'https://crests.football-data.org/792.svg',
-  'Belgium': 'https://crests.football-data.org/805.svg',
-  'Egypt': 'https://crests.football-data.org/825.svg',
-  'Iran': 'https://crests.football-data.org/iran.svg',
-  'New Zealand': 'https://crests.football-data.org/783.svg',
-  'Cape Verde Islands': 'https://crests.football-data.org/cape_verde.svg',
-  'Saudi Arabia': 'https://crests.football-data.org/saudi_arabia.svg',
-  'Senegal': 'https://crests.football-data.org/senegal.svg',
-  'Iraq': 'https://crests.football-data.org/iraq.svg',
-  'Norway': 'https://crests.football-data.org/813.svg',
-  'Algeria': 'https://crests.football-data.org/algeria.svg',
-  'Austria': 'https://crests.football-data.org/816.svg',
-  'Jordan': 'https://crests.football-data.org/8049.png',
-  'Uzbekistan': 'https://crests.football-data.org/8070.png',
-  'Colombia': 'https://crests.football-data.org/818.svg',
-  'Congo DR': 'https://crests.football-data.org/congo_dr.svg',
-  'Croatia': 'https://crests.football-data.org/799.svg',
-  'Panama': 'https://crests.football-data.org/panama.svg',
-  'Czechia': 'https://crests.football-data.org/798.svg',
-  'Bosnia-Herzegovina': 'https://crests.football-data.org/bosnia.svg',
-  'Haiti': 'https://crests.football-data.org/haiti.svg',
-  'Scotland': 'https://crests.football-data.org/814.svg',
-  'Turkey': 'https://crests.football-data.org/803.svg',
-  'Curaçao': 'https://crests.football-data.org/curacao.svg',
-  'Ivory Coast': 'https://crests.football-data.org/787.svg',
-  'Ecuador': 'https://crests.football-data.org/791.svg',
-  'Tunisia': 'https://crests.football-data.org/tunisia.svg'
-}
+const formatGroupName = (groupName) => groupName?.replace('_', ' ') ?? groupName
 
-// Format group name
-const formatGroupName = (groupName) => {
-  if (!groupName || typeof groupName !== 'string') return groupName
-  return groupName.replace('_', ' ')
-}
+const thirdPlaceTeams = computed(() =>
+  Object.entries(predictionStore.groups)
+    .filter(([, teams]) => teams.length >= 3)
+    .map(([groupName, teams]) => ({ team: teams[2], groupName }))
+)
 
-// Continue to next step
 const continueToThirdPlace = () => {
   currentStep.value = 'third-place'
 }
@@ -117,7 +45,6 @@ const continueToKnockout = () => {
     alert('Please select exactly 8 third-place teams')
     return
   }
-  currentStep.value = 'knockout'
   router.push('/knockouts')
 }
 </script>
@@ -198,15 +125,15 @@ const continueToKnockout = () => {
       
       <div class="third-place-grid">
         <div 
-          v-for="teamData in getThirdPlaceTeams()" 
+          v-for="teamData in thirdPlaceTeams" 
           :key="teamData.team.teamName"
-          :class="['third-place-card', { selected: predictionStore.isSelected(teamData) }]"
+          :class="['third-place-card', { selected: predictionStore.isThirdPlaceTeamSelected(teamData) }]"
           @click="predictionStore.toggleThirdPlaceTeam(teamData)"
         >
           <div class="card-header">
             <span class="group-label">{{ formatGroupName(teamData.groupName) }}</span>
             <div class="checkbox">
-              <span v-if="predictionStore.isSelected(teamData)">✓</span>
+              <span v-if="predictionStore.isThirdPlaceTeamSelected(teamData)">✓</span>
             </div>
           </div>
           <div class="team-info">

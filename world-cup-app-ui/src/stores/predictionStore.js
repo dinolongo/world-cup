@@ -4,73 +4,66 @@ import thirdPlaceSeeding from '../data/third-place-seeding.json'
 export const usePredictionStore = defineStore('prediction', {
   state: () => ({
     groups: {},
-    selectedThirdPlaceTeams: [],
-    roundOf32: []
+    selectedThirdPlaceTeams: []
   }),
-  
+
   getters: {
-    // Get the team name from a team code (e.g., "1A" -> 1st place team from Group A)
     getTeamFromCode: (state) => (code) => {
       if (!code) return null
-      
-      // Handle group position codes (1A, 2B, 3C, etc.)
-      const match = code.match(/^(\d)([A-L])$/)
-      if (match) {
-        const position = parseInt(match[1]) - 1 // 0-indexed
-        const group = `GROUP_${match[2]}`
-        const groupTeams = state.groups[group]
-        if (groupTeams && groupTeams[position]) {
-          return groupTeams[position].teamName
-        }
+
+      const groupPositionMatch = code.match(/^(\d)([A-L])$/)
+      if (groupPositionMatch) {
+        const position = parseInt(groupPositionMatch[1]) - 1
+        const groupTeams = state.groups[`GROUP_${groupPositionMatch[2]}`]
+        return groupTeams?.[position]?.teamName ?? null
       }
-      
-      // Handle third place team codes (3A, 3B, etc.)
+
       const thirdPlaceMatch = code.match(/^3([A-L])$/)
       if (thirdPlaceMatch) {
-        const group = `GROUP_${thirdPlaceMatch[1]}`
-        const groupTeams = state.groups[group]
-        if (groupTeams && groupTeams[2]) {
-          return groupTeams[2].teamName
-        }
+        const groupTeams = state.groups[`GROUP_${thirdPlaceMatch[1]}`]
+        return groupTeams?.[2]?.teamName ?? null
       }
-      
+
       return null
     },
-    
-    // Get the seeding lookup for third-place teams
+
     getThirdPlaceSeeding: (state) => () => {
       if (state.selectedThirdPlaceTeams.length !== 8) return null
-      
-      // Extract group letters from selected teams
       const groupLetters = state.selectedThirdPlaceTeams
         .map(t => t.groupName.replace('GROUP_', ''))
         .sort()
         .join('')
-      
-      // Look up in seeding table
-      return thirdPlaceSeeding[groupLetters] || null
+      return thirdPlaceSeeding[groupLetters] ?? null
     },
-    
-    // Get the actual third-place team for a seeding position (e.g., "3E")
+
     getThirdPlaceTeamForSeeding: (state) => (seedingCode) => {
-      const group = `GROUP_${seedingCode[1]}`
-      const groupTeams = state.groups[group]
-      if (groupTeams && groupTeams[2]) {
-        return groupTeams[2].teamName
-      }
-      return null
-    }
+      const groupTeams = state.groups[`GROUP_${seedingCode[1]}`]
+      return groupTeams?.[2]?.teamName ?? null
+    },
+
+    isThirdPlaceTeamSelected: (state) => (teamData) => {
+      return state.selectedThirdPlaceTeams.some(
+        t => t.team.teamName === teamData.team.teamName
+      )
+    },
+
+    // ── Save/load support ─────────────────────────────────────────────────
+
+    getGroupStagePredictions: (state) => () => ({
+      groups: state.groups,
+      selectedThirdPlaceTeams: state.selectedThirdPlaceTeams
+    })
   },
-  
+
   actions: {
     setGroups(groups) {
       this.groups = groups
     },
-    
+
     setSelectedThirdPlaceTeams(teams) {
       this.selectedThirdPlaceTeams = teams
     },
-    
+
     toggleThirdPlaceTeam(teamData) {
       const index = this.selectedThirdPlaceTeams.findIndex(
         t => t.team.teamName === teamData.team.teamName
@@ -81,17 +74,15 @@ export const usePredictionStore = defineStore('prediction', {
         this.selectedThirdPlaceTeams.push(teamData)
       }
     },
-    
-    isSelected(teamData) {
-      return this.selectedThirdPlaceTeams.some(
-        t => t.team.teamName === teamData.team.teamName
-      )
+
+    loadGroupStagePredictions(data) {
+      this.groups = data.groups ?? {}
+      this.selectedThirdPlaceTeams = data.selectedThirdPlaceTeams ?? []
     },
-    
+
     reset() {
       this.groups = {}
       this.selectedThirdPlaceTeams = []
-      this.roundOf32 = []
     }
   }
 })

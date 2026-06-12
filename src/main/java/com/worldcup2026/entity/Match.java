@@ -57,6 +57,10 @@ public class Match {
     @Column(name = "group_name", length = 20)
     private String group;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "duration", length = 20)
+    private MatchDuration duration;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stadium_id")
     private Stadium stadium;
@@ -79,5 +83,11 @@ public class Match {
         SUSPENDED,
         CANCELLED,
         TIMED
+    }
+
+    public enum MatchDuration {
+        REGULAR,
+        EXTRA_TIME,
+        PENALTY_SHOOTOUT
     }
 }

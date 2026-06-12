@@ -1,9 +1,26 @@
+export const BRACKET_LAYOUT = {
+  left: {
+    ro32: [74, 77, 73, 75, 83, 84, 81, 82],
+    ro16: [89, 90, 93, 94],
+    qf:   [97, 98],
+    sf:   [101]
+  },
+  right: {
+    ro32: [76, 78, 79, 80, 86, 88, 85, 87],
+    ro16: [91, 92, 95, 96],
+    qf:   [99, 100],
+    sf:   [102]
+  },
+  final: [104],
+  thirdPlace: [103]
+}
+
 export const KNOCKOUT_ROUNDS = new Set([
   'Round of 32', 'Round of 16', 'Quarter-final',
   'Semi-final', 'Match for third place', 'Final'
 ])
 
-export const TOTAL_KNOCKOUT_MATCHES = 31;
+export const TOTAL_KNOCKOUT_MATCHES = 32;
 
 export const teamCrests = {
   'Uruguay': 'https://crests.football-data.org/758.svg',

@@ -38,19 +38,19 @@
     },
     "semi_finals": {
       "101": { 
-        "winner_to": 103,
-        "loser_to": 104
+        "winner_to": 104,
+        "loser_to": 103
       },
       "102": { 
-        "winner_to": 103,
-        "loser_to": 104
+        "winner_to": 104,
+        "loser_to": 103
       }
     },
     "final": {
-      "103": { "winner_to": null }
+      "104": { "winner_to": null }
     },
     "third_place": {
-      "104": { "winner_to": null }
+      "103": { "winner_to": null }
     }
   },
   "reverse_mapping": {

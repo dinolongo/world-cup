@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import { teamCrests } from '../data/constants'
+import { teamCrests } from '../util/constants'
 
 const props = defineProps({
   match: {

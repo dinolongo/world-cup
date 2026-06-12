@@ -36,11 +36,26 @@ public class FootballDataMatchResponse {
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class FootballDataScore {
-        @JsonProperty("homeTeam")
-        private Integer homeTeam;
+        private String winner;
+        private String duration;
 
-        @JsonProperty("awayTeam")
-        private Integer awayTeam;
+        @JsonProperty("fullTime")
+        private FullTimeScore fullTime;
+
+        @Data
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public static class FullTimeScore {
+            private Integer home;
+            private Integer away;
+        }
+
+        public Integer getHomeTeam() {
+            return fullTime != null ? fullTime.getHome() : null;
+        }
+
+        public Integer getAwayTeam() {
+            return fullTime != null ? fullTime.getAway() : null;
+        }
     }
 
     public Match.MatchStatus getMatchStatus() {

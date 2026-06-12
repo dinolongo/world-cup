@@ -137,6 +137,7 @@ public class MatchService {
                 .status(apiMatch.getMatchStatus())
                 .homeScore(apiMatch.getScore() != null ? apiMatch.getScore().getHomeTeam() : null)
                 .awayScore(apiMatch.getScore() != null ? apiMatch.getScore().getAwayTeam() : null)
+                .duration(parseMatchDuration(apiMatch.getScore() != null ? apiMatch.getScore().getDuration() : null))
                 .build();
         matchRepository.save(match);
         log.debug("Created new match: {} vs {}", homeTeam.getName(), awayTeam.getName());
@@ -147,6 +148,7 @@ public class MatchService {
         existingMatch.setStatus(apiMatch.getMatchStatus());
         existingMatch.setHomeScore(apiMatch.getScore() != null ? apiMatch.getScore().getHomeTeam() : null);
         existingMatch.setAwayScore(apiMatch.getScore() != null ? apiMatch.getScore().getAwayTeam() : null);
+        existingMatch.setDuration(parseMatchDuration(apiMatch.getScore() != null ? apiMatch.getScore().getDuration() : null));
         matchRepository.save(existingMatch);
         log.debug("Updated match: {}", existingMatch.getId());
     }
@@ -167,6 +169,18 @@ public class MatchService {
         }
     }
 
+    private Match.MatchDuration parseMatchDuration(String duration) {
+        if (duration == null) {
+            return null;
+        }
+        try {
+            return Match.MatchDuration.valueOf(duration.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            log.warn("Unknown duration value: {}, defaulting to REGULAR", duration);
+            return Match.MatchDuration.REGULAR;
+        }
+    }
+
     private MatchDto mapToDto(Match match) {
         Team homeTeam = teamRepository.findById(match.getHomeTeamId()).orElse(null);
         Team awayTeam = teamRepository.findById(match.getAwayTeamId()).orElse(null);
@@ -180,6 +194,7 @@ public class MatchService {
                 .status(match.getStatus())
                 .homeScore(match.getHomeScore())
                 .awayScore(match.getAwayScore())
+                .duration(match.getDuration())
                 .lastUpdated(match.getLastUpdated())
                 .build();
     }
