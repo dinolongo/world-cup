@@ -10,146 +10,143 @@ const props = defineProps({
   }
 })
 
-// teams prop now contains the full standings data with team and statistics
+const headers = [
+  { title: 'Team', key: 'team', align: 'start', width: '38%' },
+  { title: 'MP', key: 'played', align: 'center', width: '7%' },
+  { title: 'W', key: 'wins', align: 'center', width: '7%' },
+  { title: 'D', key: 'draws', align: 'center', width: '7%' },
+  { title: 'L', key: 'losses', align: 'center', width: '7%' },
+  { title: 'GF', key: 'goalsFor', align: 'center', width: '7%' },
+  { title: 'GA', key: 'goalsAgainst', align: 'center', width: '7%' },
+  { title: 'GD', key: 'goalDifference', align: 'center', width: '7%' },
+  { title: 'Pts', key: 'points', align: 'center', width: '7%' },
+]
 </script>
 
 <template>
-  <div class="group-table-container">
-    <h2 class="group-title">{{ groupName }}</h2>
-    <div class="table-wrapper">
-      <table class="group-table">
-        <thead>
-          <tr>
-            <th class="team-col">Team</th>
-            <th>MP</th>
-            <th>W</th>
-            <th>D</th>
-            <th>L</th>
-            <th>GF</th>
-            <th>GA</th>
-            <th>GD</th>
-            <th>Pts</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="result in teams" :key="result.team.id">
-            <td class="team-cell">
-              <img :src="result.team.crest" :alt="result.team.name" class="team-crest">
-              <span class="team-name">{{ result.team.name }}</span>
-            </td>
-            <td>{{ result.played }}</td>
-            <td>{{ result.wins }}</td>
-            <td>{{ result.draws }}</td>
-            <td>{{ result.losses }}</td>
-            <td>{{ result.goalsFor }}</td>
-            <td>{{ result.goalsAgainst }}</td>
-            <td>{{ result.goalDifference }}</td>
-            <td class="points-cell">{{ result.points }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+  <v-card class="group-table-card" elevation="2" rounded="xl">
+    <v-card-title class="group-header">{{ groupName }}</v-card-title>
+    <v-data-table
+      :headers="headers"
+      :items="teams"
+      density="compact"
+      hide-default-footer
+      :items-per-page="-1"
+      class="standings-table"
+    >
+      <template v-slot:item.team="{ item }">
+        <div class="team-cell">
+          <img :src="item.team.crest" :alt="item.team.name" class="team-crest">
+          <span class="team-name">{{ item.team.name }}</span>
+        </div>
+      </template>
+      <template v-slot:item.points="{ item }">
+        <span class="points-cell">{{ item.points }}</span>
+      </template>
+    </v-data-table>
+  </v-card>
 </template>
 
 <style scoped>
-.group-table-container {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  margin-bottom: 24px;
+.group-table-card {
+  margin-bottom: 16px;
+  border: none;
 }
 
-.group-title {
+.group-header {
   background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
   color: white;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
-  margin: 0;
-  padding: 16px 20px;
+  padding: 12px 16px;
 }
 
-.table-wrapper {
+.standings-table :deep(.v-table__wrapper) {
   overflow-x: auto;
 }
 
-.group-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
+.standings-table :deep(table) {
+  font-size: 13px;
 }
 
-.group-table thead {
-  background: #f5f5f5;
+.standings-table :deep(th) {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #424242 !important;
+  padding: 8px 4px !important;
+  white-space: nowrap;
+  background-color: #f5f5f5 !important;
+  text-align: center !important;
 }
 
-.group-table th {
-  padding: 12px 16px;
-  text-align: center;
-  font-weight: 600;
-  color: #1a1a1a;
-  border-bottom: 2px solid #e0e0e0;
+.standings-table :deep(td) {
+  padding: 8px 4px !important;
+  font-size: 13px !important;
 }
 
-.group-table th.team-col {
-  text-align: left;
-  min-width: 200px;
-}
-
-.group-table td {
-  padding: 12px 16px;
-  text-align: center;
-  border-bottom: 1px solid #e0e0e0;
-  color: #333;
-}
-
-.group-table tbody tr:hover {
-  background: #f9f9f9;
+.standings-table :deep(.v-data-table__tr:hover) {
+  background-color: #f5f5f5 !important;
 }
 
 .team-cell {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px !important;
+  gap: 8px;
+  text-align: left;
 }
 
 .team-crest {
-  width: 32px;
-  height: 32px;
+  width: 20px;
+  height: 20px;
   object-fit: contain;
+  flex-shrink: 0;
 }
 
 .team-name {
   font-weight: 600;
-  color: #1a1a1a;
+  color: #212121;
+  font-size: 12px;
+  text-align: left;
+  line-height: 1.2;
 }
 
 .points-cell {
   font-weight: 700;
   color: #1e3a5f;
-  font-size: 16px;
+  font-size: 14px;
 }
 
-@media (max-width: 768px) {
-  .group-table {
-    font-size: 12px;
+@media (max-width: 600px) {
+  .group-header {
+    font-size: 14px;
+    padding: 10px 12px;
   }
-  
-  .group-table th,
-  .group-table td {
-    padding: 8px 12px;
+
+  .standings-table :deep(table) {
+    font-size: 11px;
   }
-  
+
+  .standings-table :deep(th) {
+    font-size: 10px !important;
+    padding: 6px 3px !important;
+  }
+
+  .standings-table :deep(td) {
+    padding: 6px 3px !important;
+    font-size: 11px !important;
+  }
+
   .team-crest {
-    width: 24px;
-    height: 24px;
+    width: 16px;
+    height: 16px;
   }
-  
-  .group-title {
-    font-size: 16px;
-    padding: 12px 16px;
+
+  .team-name {
+    font-size: 11px;
+  }
+
+  .points-cell {
+    font-size: 13px;
   }
 }
 </style>

@@ -73,9 +73,78 @@ const rightQFMatches   = matchesForNumbers(BRACKET_LAYOUT.right.qf)
 
 const getStadium = (groundName) => stadiumMap.get(groundName) ?? null
 
+// Dialog state
+const saveDialog = ref(false)
+const displayName = ref('')
+const nameValidationLoading = ref(false)
+const nameExists = ref(false)
+const nameError = ref('')
+
 const saveBracket = () => {
-  const payload = buildPayload()
-  console.log('Saving bracket...', payload)
+  saveDialog.value = true
+  displayName.value = ''
+  nameExists.value = false
+  nameError.value = ''
+}
+
+const validateDisplayName = async () => {
+  if (displayName.value.length === 0 || displayName.value.length > 50) {
+    nameError.value = 'Display name must be 1-50 characters'
+    return
+  }
+  
+  nameValidationLoading.value = true
+  nameExists.value = false
+  nameError.value = ''
+  
+  try {
+    const response = await fetch('http://localhost:8080/api/predictions/check-name', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ displayName: displayName.value })
+    })
+    const data = await response.json()
+    if (!data.available) {
+      nameExists.value = true
+      nameError.value = 'Please try another name'
+    }
+  } catch (error) {
+    nameError.value = 'Error validating name'
+  } finally {
+    nameValidationLoading.value = false
+  }
+}
+
+const confirmSave = async () => {
+  if (nameExists.value || nameError.value || !displayName.value) {
+    return
+  }
+  
+  try {
+    const payload = buildPayload()
+    const response = await fetch('http://localhost:8080/api/predictions/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        displayName: displayName.value,
+        groupStagePredictions: JSON.stringify(predictionStore.groups),
+        knockoutPredictions: JSON.stringify(payload)
+      })
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      console.log('Bracket saved successfully:', data)
+      saveDialog.value = false
+      // Show success message or redirect
+      alert(`Bracket saved successfully! Your bracket ID is: ${data.bracketId}`)
+    } else {
+      const errorData = await response.json()
+      nameError.value = errorData.message || 'Error saving bracket'
+    }
+  } catch (error) {
+    nameError.value = 'Error saving bracket'
+  }
 }
 
 </script>
@@ -87,13 +156,14 @@ const saveBracket = () => {
         <h1>World Cup 2026 - Knockout Stage</h1>
       </v-col>
       <v-col cols="2">
-        <!-- <v-btn
-          :disabled="!allPredictionsMade"
-          @click="saveBracket"
-        > -->
-           <v-btn
+        <v-btn
+          color="primary"
+          size="large"
+          rounded="pill"
+          elevation="3"
           @click="saveBracket"
         >
+          <v-icon start>mdi-content-save</v-icon>
           Save My Bracket
         </v-btn>
       </v-col>
@@ -345,13 +415,74 @@ const saveBracket = () => {
         </div>
       </div>
     </div>
+
+    <!-- Save Bracket Dialog -->
+    <v-dialog v-model="saveDialog" max-width="500" persistent>
+      <v-card class="save-dialog-card">
+        <v-card-title class="dialog-title">
+          <v-icon start class="mr-2">mdi-trophy</v-icon>
+          Save Your Bracket
+        </v-card-title>
+        <v-card-text class="pa-4">
+          <p class="dialog-description">
+            Enter a display name to save your World Cup 2026 bracket predictions
+          </p>
+          <v-text-field
+            v-model="displayName"
+            label="Display Name"
+            placeholder="Enter your name"
+            :counter="50"
+            :error-messages="nameError"
+            :loading="nameValidationLoading"
+            @blur="validateDisplayName"
+            @keyup.enter="validateDisplayName"
+            variant="outlined"
+            color="primary"
+            class="mt-4"
+          >
+            <template v-slot:append-inner v-if="nameExists">
+              <v-icon color="error">mdi-alert</v-icon>
+            </template>
+            <template v-slot:append-inner v-else-if="displayName && !nameError && !nameValidationLoading">
+              <v-icon color="success">mdi-check</v-icon>
+            </template>
+          </v-text-field>
+          <v-alert
+            v-if="nameExists"
+            type="error"
+            density="compact"
+            class="mt-2"
+          >
+            <v-icon start>mdi-alert</v-icon>
+            Please try another name
+          </v-alert>
+        </v-card-text>
+        <v-card-actions class="pa-4 pt-0">
+          <v-spacer></v-spacer>
+          <v-btn
+            variant="text"
+            @click="saveDialog = false"
+          >
+            Cancel
+          </v-btn>
+          <v-btn
+            color="primary"
+            variant="elevated"
+            :disabled="nameExists || !!nameError || !displayName || nameValidationLoading"
+            @click="confirmSave"
+          >
+            Save Bracket
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
 <style scoped>
 .knockouts-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #1a1a1a;
   padding: 40px 20px;
   display: flex;
   flex-direction: column;
@@ -364,7 +495,7 @@ h1 {
   font-weight: 700;
   text-align: center;
   margin: 0 0 40px 0;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .loading {
@@ -614,5 +745,23 @@ h1 {
     flex-direction: column;
     align-items: center;
   }
+}
+
+.save-dialog-card {
+  background: #2d2d2d;
+  border: 1px solid #3d3d3d;
+}
+
+.dialog-title {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.dialog-description {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  margin-bottom: 16px;
 }
 </style>

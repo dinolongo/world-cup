@@ -69,7 +69,7 @@ onMounted(async () => {
 <style scoped>
 .schedule-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #1a1a1a;
   padding: 40px 20px;
   display: flex;
   flex-direction: column;
@@ -83,7 +83,7 @@ h1 {
   font-weight: 700;
   text-align: center;
   margin: 0;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 @media (max-width: 768px) {

@@ -2,7 +2,6 @@ package com.worldcup2026.controller;
 
 import com.worldcup2026.dto.MatchDto;
 import com.worldcup2026.service.MatchService;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +20,6 @@ public class MatchController {
     private final MatchService matchService;
 
     @GetMapping
-    @Operation(summary = "Get all matches", description = "Retrieve all World Cup matches with caching")
     public ResponseEntity<List<MatchDto>> getAllMatches() {
         log.info("GET /api/matches");
         List<MatchDto> matches = matchService.getAllMatches();
@@ -29,7 +27,6 @@ public class MatchController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get match by ID", description = "Retrieve a specific match by its database ID")
     public ResponseEntity<MatchDto> getMatchById(@PathVariable Long id) {
         log.info("GET /api/matches/{}", id);
         MatchDto match = matchService.getMatchById(id);

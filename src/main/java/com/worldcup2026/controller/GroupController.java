@@ -22,7 +22,6 @@ public class GroupController {
     private final GroupStandingService groupStandingService;
 
     @GetMapping
-    @Operation(summary = "Get all group standings", description = "Retrieve all World Cup group standings calculated from match data")
     public ResponseEntity<List<GroupStandingDto>> getAllGroupStandings() {
         log.info("GET /api/groups");
         List<GroupStandingDto> standings = groupStandingService.getAllGroupStandings();
@@ -30,7 +29,6 @@ public class GroupController {
     }
 
     @GetMapping("/{groupName}")
-    @Operation(summary = "Get group standings by group name", description = "Retrieve standings for a specific group calculated from match data")
     public ResponseEntity<List<GroupStandingDto>> getGroupStandingsByGroup(
             @Parameter(description = "Group name (e.g., GROUP_A, GROUP_B)")
             @PathVariable String groupName) {

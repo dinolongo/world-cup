@@ -20,7 +20,7 @@
 
 <style scoped>
 .about-page {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #1a1a1a;
 }
 .center-content {
   min-height: 100vh;
