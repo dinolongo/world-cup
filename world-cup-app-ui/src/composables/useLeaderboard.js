@@ -1,16 +1,15 @@
 import { ref, computed } from 'vue'
-import { getLeaderboard, getLeaderboardCount, getGroups } from '../services/api'
+import { getLeaderboard, getGroups } from '../services/api'
 import { teamCrests } from '../util/constants'
 
 export const useLeaderboard = () => {
   const entries = ref([])
   const loading = ref(true)
   const searchQuery = ref('')
-  const totalCount = ref(0)
   const teamsMap = ref(new Map())
 
   const scoringStatus = computed(() => {
-    if (entries.value.length === 0) return 'none'
+    if (entries.value.length === 0) return 'not-started'
     
     const scoredEntries = entries.value.filter(entry => entry.totalScore !== null)
     
@@ -19,20 +18,16 @@ export const useLeaderboard = () => {
     return 'in-progress'
   })
 
-  const fetchLeaderboard = async (page = 0, size = 20) => {
+  const fetchLeaderboard = async () => {
     try {
       loading.value = true
-      const [data, count] = await Promise.all([
-        getLeaderboard(page, size),
-        getLeaderboardCount()
-      ])
-      
-      entries.value = data.content || []
-      totalCount.value = count
+      const data = await getLeaderboard()
+
+      entries.value = data || []
+
     } catch (error) {
       console.error('Failed to fetch leaderboard:', error)
       entries.value = []
-      totalCount.value = 0
     } finally {
       loading.value = false
     }
@@ -82,12 +77,10 @@ export const useLeaderboard = () => {
   }
 
   return {
-    entries,
     filteredEntries,
     loading,
     scoringStatus,
     searchQuery,
-    totalCount,
     getTeamName,
     getTeamCrest,
     fetchLeaderboard,

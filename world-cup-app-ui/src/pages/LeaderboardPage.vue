@@ -9,11 +9,12 @@ const {
   loading, 
   scoringStatus, 
   searchQuery, 
-  totalCount, 
   getTeamName, 
   getTeamCrest,
   initialize 
 } = useLeaderboard()
+
+const totalCount = computed(() => filteredEntries.value.length)
 
 const headers = [
   { title: 'Rank', key: 'rank', align: 'start', sortable: false, width: '80px' },
@@ -121,7 +122,7 @@ onMounted(() => {
 
       <!-- Scoring Status Banner -->
       <v-alert
-        v-if="scoringStatus !== 'none' && scoringStatusText"
+        v-if="scoringStatusText"
         :color="scoringStatusColor"
         variant="tonal"
         class="mb-4"
@@ -176,7 +177,6 @@ onMounted(() => {
           :headers="headers"
           :items="filteredEntries"
           :loading="loading"
-          hide-default-footer
           class="leaderboard-table"
         >
           <template v-slot:item.rank="{ item, index }">
@@ -260,93 +260,6 @@ onMounted(() => {
               View Bracket
               <v-icon end size="small">mdi-arrow-right</v-icon>
             </v-btn>
-          </template>
-
-          <template v-slot:body="{ items }">
-            <tr
-              v-for="(item, index) in items"
-              :key="item.bracketId"
-              :class="getRowClass(index + 1)"
-            >
-              <td>
-                <div class="rank-cell">
-                  <v-icon
-                    v-if="getRankIcon(index + 1)"
-                    :color="getRankColor(index + 1)"
-                    size="20"
-                    class="rank-icon"
-                  >
-                    {{ getRankIcon(index + 1) }}
-                  </v-icon>
-                  <span v-else class="rank-number">{{ index + 1 }}</span>
-                </div>
-              </td>
-              <td>{{ item.displayName }}</td>
-              <td>
-                <div v-if="item.predictedChampionId" class="team-cell">
-                  <img
-                    :src="getTeamCrest(item.predictedChampionId)"
-                    :alt="getTeamName(item.predictedChampionId)"
-                    class="team-crest"
-                    @error="$event.target.style.display = 'none'"
-                  />
-                  <span class="team-name">{{ getTeamName(item.predictedChampionId) }}</span>
-                </div>
-                <span v-else class="unknown-team">?</span>
-              </td>
-              <td>
-                <div v-if="item.predictedRunnerUpId" class="team-cell">
-                  <img
-                    :src="getTeamCrest(item.predictedRunnerUpId)"
-                    :alt="getTeamName(item.predictedRunnerUpId)"
-                    class="team-crest"
-                    @error="$event.target.style.display = 'none'"
-                  />
-                  <span class="team-name">{{ getTeamName(item.predictedRunnerUpId) }}</span>
-                </div>
-                <span v-else class="unknown-team">?</span>
-              </td>
-              <td>
-                <div v-if="item.predictedThirdPlaceId" class="team-cell">
-                  <img
-                    :src="getTeamCrest(item.predictedThirdPlaceId)"
-                    :alt="getTeamName(item.predictedThirdPlaceId)"
-                    class="team-crest"
-                    @error="$event.target.style.display = 'none'"
-                  />
-                  <span class="team-name">{{ getTeamName(item.predictedThirdPlaceId) }}</span>
-                </div>
-                <span v-else class="unknown-team">?</span>
-              </td>
-              <td>
-                <div v-if="item.totalScore !== null" class="score-cell">
-                  <div class="score-value">{{ item.totalScore }}</div>
-                  <v-progress-linear
-                    :model-value="(item.totalScore / 108) * 100"
-                    color="primary"
-                    height="6"
-                    rounded
-                    class="score-progress"
-                  />
-                  <div class="score-breakdown">
-                    <span v-if="item.groupStageScore !== null">Group: {{ item.groupStageScore }}pts</span>
-                    <span v-if="item.knockoutScore !== null">Knockouts: {{ item.knockoutScore }}pts</span>
-                  </div>
-                </div>
-                <span v-else class="no-score">—</span>
-              </td>
-              <td class="text-center">
-                <v-btn
-                  size="small"
-                  color="primary"
-                  variant="text"
-                  @click="viewBracket(item.bracketId)"
-                >
-                  View Bracket
-                  <v-icon end size="small">mdi-arrow-right</v-icon>
-                </v-btn>
-              </td>
-            </tr>
           </template>
         </v-data-table>
       </v-card>

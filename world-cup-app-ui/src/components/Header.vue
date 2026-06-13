@@ -46,6 +46,12 @@ const isActive = (path) => {
           Knockouts
         </button>
         <button 
+          @click="navigateTo('/leaderboard')" 
+          :class="['nav-button', { active: isActive('/leaderboard') }]"
+        >
+          Leaderboard
+        </button>
+        <button 
           @click="navigateTo('/about')" 
           :class="['nav-button', { active: isActive('/about') }]"
         >

@@ -73,10 +73,6 @@ export async function getAllPredictions() {
   return fetchAPI('/predictions');
 }
 
-export async function getLeaderboard(page = 0, size = 20) {
-  return fetchAPI(`/leaderboard?page=${page}&size=${size}`);
-}
-
-export async function getLeaderboardCount() {
-  return fetchAPI('/leaderboard/count');
+export async function getLeaderboard() {
+  return fetchAPI('/leaderboard');
 }

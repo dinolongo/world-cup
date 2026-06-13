@@ -7,10 +7,10 @@ import com.worldcup2026.entity.BracketPrediction;
 import com.worldcup2026.repository.BracketPredictionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -22,14 +22,21 @@ public class LeaderboardService {
     private final ObjectMapper objectMapper;
 
     /**
-     * Get paginated leaderboard entries
+     * Get all leaderboard entries
      */
-    public Page<LeaderboardEntryDTO> getLeaderboard(Pageable pageable) {
-        log.info("Fetching leaderboard with pageable: {}", pageable);
+    public List<LeaderboardEntryDTO> getLeaderboard() {
+        log.info("Fetching all leaderboard entries");
         
-        Page<BracketPrediction> predictions = bracketPredictionRepository.findAll(pageable);
+        Sort sort = Sort.by(
+                Sort.Order.desc("totalScore"),
+                Sort.Order.asc("createdAt")
+        );
         
-        return predictions.map(this::mapToLeaderboardEntryDTO);
+        List<BracketPrediction> predictions = bracketPredictionRepository.findAll(sort);
+        
+        return predictions.stream()
+                .map(this::mapToLeaderboardEntryDTO)
+                .toList();
     }
 
     /**
