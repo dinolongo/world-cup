@@ -22,7 +22,7 @@ export const useLeaderboard = () => {
     try {
       loading.value = true
       const data = await getLeaderboard()
-
+      console.log(data)
       entries.value = data || []
 
     } catch (error) {

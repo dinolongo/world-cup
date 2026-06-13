@@ -62,22 +62,14 @@ public class LeaderboardService {
                     prediction.getKnockoutPredictions(),
                     new TypeReference<Map<String, String>>() {}
             );
-
-            // Match 104 is the Final - winner is the champion
             String championId = knockoutPredictions.get("104");
+
             builder.predictedChampionId(championId);
 
-            // Match 103 is the Third Place match - winner is third place
             String thirdPlaceId = knockoutPredictions.get("103");
+            
             builder.predictedThirdPlaceId(thirdPlaceId);
-
-            // Runner-up is the loser of match 104
-            // Since we only store winners, we need match data to determine this
-            // For now, we'll set it to null and can enhance later
-            builder.predictedRunnerUpId(null);
-
-            // Parse group stage predictions to calculate group stage score
-            // This will be populated when scoring runs
+            builder.predictedRunnerUpId(deriveRunnerUpId(knockoutPredictions));
             builder.groupStageScore(null);
             builder.knockoutScore(null);
 
@@ -86,5 +78,15 @@ public class LeaderboardService {
         }
 
         return builder.build();
+    }
+
+    private String deriveRunnerUpId(Map<String, String> knockoutPredictions) {
+        String finalist1 = knockoutPredictions.get("101"); 
+        String finalist2 = knockoutPredictions.get("102"); 
+        String championId = knockoutPredictions.get("104"); 
+        
+        // Runner-up is whichever finalist didn't win the Final
+        if (championId == null || finalist1 == null || finalist2 == null) return null;
+        return championId.equals(finalist1) ? finalist2 : finalist1;
     }
 }

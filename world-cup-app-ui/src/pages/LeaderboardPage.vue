@@ -17,7 +17,7 @@ const {
 const totalCount = computed(() => filteredEntries.value.length)
 
 const headers = [
-  { title: 'Rank', key: 'rank', align: 'start', sortable: false, width: '80px' },
+  // { title: 'Rank', key: 'rank', align: 'start', sortable: false, width: '80px' },
   { title: 'Name', key: 'displayName', align: 'start', sortable: false },
   { title: 'Champion', key: 'predictedChampionId', align: 'start', sortable: false },
   { title: 'Runner-Up', key: 'predictedRunnerUpId', align: 'start', sortable: false },
@@ -179,7 +179,7 @@ onMounted(() => {
           :loading="loading"
           class="leaderboard-table"
         >
-          <template v-slot:item.rank="{ item, index }">
+          <!-- <template v-slot:item.rank="{ item, index }">
             <div class="rank-cell">
               <v-icon
                 v-if="getRankIcon(index + 1)"
@@ -191,7 +191,7 @@ onMounted(() => {
               </v-icon>
               <span v-else class="rank-number">{{ index + 1 }}</span>
             </div>
-          </template>
+          </template> -->
 
           <template v-slot:item.predictedChampionId="{ item }">
             <div v-if="item.predictedChampionId" class="team-cell">
