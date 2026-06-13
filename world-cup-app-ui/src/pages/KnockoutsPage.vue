@@ -7,6 +7,7 @@ import KnockoutMatchCard from '../components/KnockoutMatchCard.vue'
 import { useBracketConnectors } from '../composables/useBracketConnectors'
 import { useKnockoutPredictions } from '../composables/useKnockoutPredictions'
 import { KNOCKOUT_ROUNDS, BRACKET_LAYOUT } from '../util/constants'
+import { checkDisplayName, savePrediction } from '../services/api'
 
 const predictionStore = usePredictionStore()
 
@@ -36,6 +37,7 @@ const {
   thirdPlaceWinner,
   getTeamCrest,
   getTeamName,
+  getTeamId,
   selectWinner,
   finalMatch,
   thirdPlaceMatch,
@@ -98,12 +100,7 @@ const validateDisplayName = async () => {
   nameError.value = ''
   
   try {
-    const response = await fetch('http://localhost:8080/api/predictions/check-name', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ displayName: displayName.value })
-    })
-    const data = await response.json()
+    const data = await checkDisplayName(displayName.value)
     if (!data.available) {
       nameExists.value = true
       nameError.value = 'Please try another name'
@@ -122,26 +119,16 @@ const confirmSave = async () => {
   
   try {
     const payload = buildPayload()
-    const response = await fetch('http://localhost:8080/api/predictions/save', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        displayName: displayName.value,
-        groupStagePredictions: JSON.stringify(predictionStore.groups),
-        knockoutPredictions: JSON.stringify(payload)
-      })
-    })
-    
-    if (response.ok) {
-      const data = await response.json()
-      console.log('Bracket saved successfully:', data)
-      saveDialog.value = false
-      // Show success message or redirect
-      alert(`Bracket saved successfully! Your bracket ID is: ${data.bracketId}`)
-    } else {
-      const errorData = await response.json()
-      nameError.value = errorData.message || 'Error saving bracket'
-    }
+    console.log(payload)
+    const data = await savePrediction(
+      displayName.value,
+      JSON.stringify(payload.groupStagePredictions),
+      JSON.stringify(payload.knockoutPredictions)
+    )
+
+    console.log('Bracket saved successfully:', data)
+    saveDialog.value = false
+    alert(`Bracket saved successfully! Your bracket ID is: ${data.bracketId}`)
   } catch (error) {
     nameError.value = 'Error saving bracket'
   }
@@ -157,6 +144,7 @@ const confirmSave = async () => {
       </v-col>
       <v-col cols="2">
         <v-btn
+          v-if="allPredictionsMade"
           color="primary"
           size="large"
           rounded="pill"
@@ -209,6 +197,8 @@ const confirmSave = async () => {
               :match-num="match.num"
               :team1-name="getTeamName(match.team1, match.num, match.team2)"
               :team2-name="getTeamName(match.team2, match.num, match.team1)"
+              :team1-id="getTeamId(match.team1, match.num, match.team2)"
+              :team2-id="getTeamId(match.team2, match.num, match.team1)"
               :stadium="getStadium(match.ground)"
               @select-winner="selectWinner(match, $event)"
                 :ref="el => setCardRef(el, match.num)"
@@ -228,6 +218,8 @@ const confirmSave = async () => {
               :match-num="match.num"
               :team1-name="getTeamName(match.team1, match.num, match.team2)"
               :team2-name="getTeamName(match.team2, match.num, match.team1)"
+              :team1-id="getTeamId(match.team1, match.num, match.team2)"
+              :team2-id="getTeamId(match.team2, match.num, match.team1)"
               :stadium="getStadium(match.ground)"
               @select-winner="selectWinner(match, $event)"
               :ref="el => setCardRef(el, match.num)"
@@ -246,6 +238,8 @@ const confirmSave = async () => {
               :match-num="match.num"
               :team1-name="getTeamName(match.team1, match.num, match.team2)"
               :team2-name="getTeamName(match.team2, match.num, match.team1)"
+              :team1-id="getTeamId(match.team1, match.num, match.team2)"
+              :team2-id="getTeamId(match.team2, match.num, match.team1)"
               :stadium="getStadium(match.ground)"
               @select-winner="selectWinner(match, $event)"
               :ref="el => setCardRef(el, match.num)"
@@ -294,6 +288,8 @@ const confirmSave = async () => {
             :match-num="finalMatch.num"
             :team1-name="getTeamName(finalMatch.team1, finalMatch.num, finalMatch.team2)"
             :team2-name="getTeamName(finalMatch.team2, finalMatch.num, finalMatch.team1)"
+            :team1-id="getTeamId(finalMatch.team1, finalMatch.num, finalMatch.team2)"
+            :team2-id="getTeamId(finalMatch.team2, finalMatch.num, finalMatch.team1)"
             :stadium="getStadium(finalMatch.ground)"
             @select-winner="selectWinner(finalMatch, $event)"
             class="final-card"
@@ -311,6 +307,8 @@ const confirmSave = async () => {
               :match-num="sf101Match.num"
               :team1-name="getTeamName(sf101Match.team1, sf101Match.num, sf101Match.team2)"
               :team2-name="getTeamName(sf101Match.team2, sf101Match.num, sf101Match.team1)"
+              :team1-id="getTeamId(sf101Match.team1, sf101Match.num, sf101Match.team2)"
+              :team2-id="getTeamId(sf101Match.team2, sf101Match.num, sf101Match.team1)"
               :stadium="getStadium(sf101Match.ground)"
               @select-winner="selectWinner(sf101Match, $event)"
               :ref="el => setCardRef(el, sf101Match.num)"
@@ -324,6 +322,8 @@ const confirmSave = async () => {
               :match-num="sf102Match.num"
               :team1-name="getTeamName(sf102Match.team1, sf102Match.num, sf102Match.team2)"
               :team2-name="getTeamName(sf102Match.team2, sf102Match.num, sf102Match.team1)"
+              :team1-id="getTeamId(sf102Match.team1, sf102Match.num, sf102Match.team2)"
+              :team2-id="getTeamId(sf102Match.team2, sf102Match.num, sf102Match.team1)"
               :stadium="getStadium(sf102Match.ground)"
               @select-winner="selectWinner(sf102Match, $event)"
               :ref="el => setCardRef(el, sf102Match.num)"
@@ -340,11 +340,13 @@ const confirmSave = async () => {
             :match-num="thirdPlaceMatch.num"
             :team1-name="getTeamName(thirdPlaceMatch.team1, thirdPlaceMatch.num, thirdPlaceMatch.team2)"
             :team2-name="getTeamName(thirdPlaceMatch.team2, thirdPlaceMatch.num, thirdPlaceMatch.team1)"
+            :team1-id="getTeamId(thirdPlaceMatch.team1, thirdPlaceMatch.num, thirdPlaceMatch.team2)"
+            :team2-id="getTeamId(thirdPlaceMatch.team2, thirdPlaceMatch.num, thirdPlaceMatch.team1)"
             :stadium="getStadium(thirdPlaceMatch.ground)"
             @select-winner="selectWinner(thirdPlaceMatch, $event)"
             :ref="el => setCardRef(el, thirdPlaceMatch.num)"
           />
-         
+
         </div>
       </div>
 
@@ -371,6 +373,8 @@ const confirmSave = async () => {
               :match-num="match.num"
               :team1-name="getTeamName(match.team1, match.num, match.team2)"
               :team2-name="getTeamName(match.team2, match.num, match.team1)"
+              :team1-id="getTeamId(match.team1, match.num, match.team2)"
+              :team2-id="getTeamId(match.team2, match.num, match.team1)"
               :stadium="getStadium(match.ground)"
               @select-winner="selectWinner(match, $event)"
               :ref="el => setCardRef(el, match.num)"
@@ -389,6 +393,8 @@ const confirmSave = async () => {
               :match-num="match.num"
               :team1-name="getTeamName(match.team1, match.num, match.team2)"
               :team2-name="getTeamName(match.team2, match.num, match.team1)"
+              :team1-id="getTeamId(match.team1, match.num, match.team2)"
+              :team2-id="getTeamId(match.team2, match.num, match.team1)"
               :stadium="getStadium(match.ground)"
               @select-winner="selectWinner(match, $event)"
               :ref="el => setCardRef(el, match.num)"
@@ -407,6 +413,8 @@ const confirmSave = async () => {
               :match-num="match.num"
               :team1-name="getTeamName(match.team1, match.num, match.team2)"
               :team2-name="getTeamName(match.team2, match.num, match.team1)"
+              :team1-id="getTeamId(match.team1, match.num, match.team2)"
+              :team2-id="getTeamId(match.team2, match.num, match.team1)"
               :stadium="getStadium(match.ground)"
               @select-winner="selectWinner(match, $event)"
               :ref="el => setCardRef(el, match.num)"

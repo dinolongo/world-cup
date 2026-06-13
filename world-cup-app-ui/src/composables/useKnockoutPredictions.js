@@ -1,6 +1,5 @@
 import { ref, computed } from 'vue'
 import { teamCrests, TOTAL_KNOCKOUT_MATCHES, BRACKET_LAYOUT } from '../util/constants'
-import bracketAdvancement from '../data/bracket-advancement.json'
 import { buildAdvancementMap } from './useAdvancementMap'
 
 export const useKnockoutPredictions = (knockoutMatches, predictionStore) => {
@@ -29,12 +28,22 @@ export const useKnockoutPredictions = (knockoutMatches, predictionStore) => {
 
     if (teamCode.startsWith('W')) {
       const sourceMatchNum = teamCode.substring(1)
-      return knockoutPredictions.value[sourceMatchNum] ?? `Winner of Match ${sourceMatchNum}`
+      const teamId = knockoutPredictions.value[sourceMatchNum]
+      if (teamId) {
+        const team = predictionStore.getTeamById(teamId)
+        if (team) return team.teamName
+      }
+      return `Winner of Match ${sourceMatchNum}`
     }
 
     if (teamCode.startsWith('L')) {
       const sourceMatchNum = teamCode.substring(1)
-      return knockoutLosers.value[sourceMatchNum] ?? `Loser of Match ${sourceMatchNum}`
+      const teamId = knockoutLosers.value[sourceMatchNum]
+      if (teamId) {
+        const team = predictionStore.getTeamById(teamId)
+        if (team) return team.teamName
+      }
+      return `Loser of Match ${sourceMatchNum}`
     }
 
     if (teamCode.includes('/')) {
@@ -49,6 +58,33 @@ export const useKnockoutPredictions = (knockoutMatches, predictionStore) => {
     return predictionStore.getTeamFromCode(teamCode) ?? formatTeamNamePlaceholder(teamCode)
   }
 
+  const getTeamId = (teamCode, _matchNum, opponentCode) => {
+    if (!teamCode) return null
+
+    if (teamCode.startsWith('W')) {
+      const sourceMatchNum = teamCode.substring(1)
+      return knockoutPredictions.value[sourceMatchNum] ?? null
+    }
+
+    if (teamCode.startsWith('L')) {
+      const sourceMatchNum = teamCode.substring(1)
+      return knockoutLosers.value[sourceMatchNum] ?? null
+    }
+
+    if (teamCode.includes('/')) {
+      if (thirdPlaceSeeding.value && opponentCode) {
+        const thirdPlaceCode = thirdPlaceSeeding.value[opponentCode]
+        if (thirdPlaceCode) {
+          return predictionStore.getTeamIdFromCode(thirdPlaceCode)
+        }
+      }
+      return null
+    }
+
+    // Look up teamId from team code (e.g., "1A" -> teamId)
+    return predictionStore.getTeamIdFromCode(teamCode)
+  }
+
   const getTeamCrest = (teamName) => teamCrests[teamName] ?? null
 
   // ── Match lookups ─────────────────────────────────────────────────────────
@@ -60,33 +96,49 @@ export const useKnockoutPredictions = (knockoutMatches, predictionStore) => {
 
   // ── Derived display state ─────────────────────────────────────────────────
 
-  const finalWinner = computed(() =>
-    finalMatch.value ? knockoutPredictions.value[finalMatch.value.num] ?? null : null
-  )
-
-  const finalRunnerUp = computed(() => {
-    if (!finalMatch.value || !finalWinner.value) return null
-    const team1 = getTeamName(finalMatch.value.team1, finalMatch.value.num, finalMatch.value.team2)
-    const team2 = getTeamName(finalMatch.value.team2, finalMatch.value.num, finalMatch.value.team1)
-    return finalWinner.value === team1 ? team2 : team1
+  const finalWinner = computed(() => {
+    const teamId = finalMatch.value ? knockoutPredictions.value[finalMatch.value.num] ?? null : null
+    if (teamId) {
+      const team = predictionStore.getTeamById(teamId)
+      return team ? team.teamName : null
+    }
+    return null
   })
 
-  const thirdPlaceWinner = computed(() =>
-    thirdPlaceMatch.value ? knockoutPredictions.value[thirdPlaceMatch.value.num] ?? null : null
-  )
+  const finalRunnerUp = computed(() => {
+    if (!finalMatch.value) return null
+    const winnerId = knockoutPredictions.value[finalMatch.value.num]
+    if (!winnerId) return null
+    const team1Id = getTeamId(finalMatch.value.team1, finalMatch.value.num, finalMatch.value.team2)
+    const team2Id = getTeamId(finalMatch.value.team2, finalMatch.value.num, finalMatch.value.team1)
+    const loserId = winnerId === team1Id ? team2Id : team1Id
+    return loserId ? predictionStore.getTeamById(loserId)?.teamName ?? null : null
+  })
+
+  const thirdPlaceWinner = computed(() => {
+    const teamId = thirdPlaceMatch.value ? knockoutPredictions.value[thirdPlaceMatch.value.num] ?? null : null
+    if (teamId) {
+      const team = predictionStore.getTeamById(teamId)
+      return team ? team.teamName : null
+    }
+    return null
+  })
+
+  
 
   // ── Prediction actions ────────────────────────────────────────────────────
 
-  const selectWinner = (match, team) => {
-    knockoutPredictions.value[match.num] = team
+  const selectWinner = (match, teamId) => {
+    console.log(teamId)
+    knockoutPredictions.value[match.num] = teamId
 
     const entry = advancementMap[match.num]
     if (!entry) return
 
     if (entry.loserTo) {
-      const team1 = getTeamName(match.team1, match.num, match.team2)
-      const team2 = getTeamName(match.team2, match.num, match.team1)
-      knockoutLosers.value[match.num] = team === team1 ? team2 : team1
+      const team1Id = getTeamId(match.team1, match.num, match.team2)
+      const team2Id = getTeamId(match.team2, match.num, match.team1)
+      knockoutLosers.value[match.num] = teamId === team1Id ? team2Id : team1Id
 
       const loserMatch = knockoutMatches.value.find(m => m.num === entry.loserTo)
       if (loserMatch) {
@@ -109,25 +161,26 @@ export const useKnockoutPredictions = (knockoutMatches, predictionStore) => {
 
   // ── Save / load ───────────────────────────────────────────────────────────
 
-  const allPredictionsMade = computed(() =>
-    console.log(Object.keys(knockoutPredictions.value).length),
-    Object.keys(knockoutPredictions.value).length >= TOTAL_KNOCKOUT_MATCHES
-  )
+  const allPredictionsMade = computed(() => {
+    console.log(Object.keys(knockoutPredictions.value).length)
+    return Object.keys(knockoutPredictions.value).length === TOTAL_KNOCKOUT_MATCHES
+    // 32 === TOTAL_KNOCKOUT_MATCHES
+  })
 
   const buildPayload = () => ({
-    predictions: { ...knockoutPredictions.value },
-    groupStage: predictionStore.getGroupStagePredictions()
+    knockoutPredictions: { ...knockoutPredictions.value },
+    groupStagePredictions: predictionStore.getGroupStagePredictions()
   })
 
   const loadPredictions = (data) => {
-    if (data.predictions) knockoutPredictions.value = data.predictions
-    if (data.groupStage) predictionStore.loadGroupStagePredictions(data.groupStage)
+    if (data.knockoutPredictions) knockoutPredictions.value = data.knockoutPredictions
+    if (data.groupStagePredictions) predictionStore.loadGroupStagePredictions(data.groupStagePredictions)
   }
 
   return {
     finalMatch, thirdPlaceMatch, sf101Match, sf102Match,
     finalWinner, finalRunnerUp, thirdPlaceWinner,
-    getTeamName, getTeamCrest,
+    getTeamName, getTeamId, getTeamCrest,
     selectWinner, resetPredictions,
     allPredictionsMade, buildPayload, loadPredictions
   }

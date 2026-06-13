@@ -1,5 +1,4 @@
 <script setup>
-import { computed } from 'vue'
 import { teamCrests } from '../util/constants'
 
 const props = defineProps({
@@ -13,6 +12,14 @@ const props = defineProps({
   },
   team2Name: {
     type: String,
+    required: true
+  },
+  team1Id: {
+    type: [String, null],
+    required: true
+  },
+  team2Id: {
+    type: [String, null],
     required: true
   },
   stadium: {
@@ -36,12 +43,14 @@ const formatTime = (timeStr) => {
   return timeStr
 }
 
-const getTeamCrest = (teamName) => {
-  return teamCrests[teamName] || null
-}
+const getTeamCrest = (teamName) => teamCrests[teamName] ?? null
 
-const handleTeamClick = (team) => {
-  emit('select-winner', team)
+
+const handleTeamClick = (teamId) => {
+  if (!teamId) {
+    return
+  }
+  emit('select-winner', teamId)
 }
 </script>
 
@@ -56,7 +65,7 @@ const handleTeamClick = (team) => {
     <div class="teams">
       <button 
         class="team-button"
-        @click="handleTeamClick(team1Name)"
+        @click="handleTeamClick(team1Id)"
       >
         <img 
           v-if="getTeamCrest(team1Name)" 
@@ -68,7 +77,7 @@ const handleTeamClick = (team) => {
       </button>
       <button 
         class="team-button"
-        @click="handleTeamClick(team2Name)"
+        @click="handleTeamClick(team2Id)"
       >
         <img 
           v-if="getTeamCrest(team2Name)" 

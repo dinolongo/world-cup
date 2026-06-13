@@ -4,6 +4,7 @@ import GroupsPage from '../pages/GroupsPage.vue'
 import PredictionPage from '../pages/PredictionPage.vue'
 import KnockoutsPage from '../pages/KnockoutsPage.vue'
 import AboutPage from '../pages/AboutPage.vue'
+import LeaderboardPage from '../pages/LeaderboardPage.vue'
 
 const routes = [
   {
@@ -25,6 +26,11 @@ const routes = [
     path: '/knockouts',
     name: 'Knockouts',
     component: KnockoutsPage
+  },
+  {
+    path: '/leaderboard',
+    name: 'Leaderboard',
+    component: LeaderboardPage
   },
   {
     path: '/about',
