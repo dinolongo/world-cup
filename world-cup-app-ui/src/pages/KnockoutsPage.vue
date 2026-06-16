@@ -1,15 +1,18 @@
 <script setup>
 import { ref, onMounted, computed, onUnmounted, nextTick } from 'vue'
+import { useDisplay } from 'vuetify'
 import matchStadiumData from '../data/match-stadium.json'
 import stadiumData from '../data/stadium-data.json'
 import { usePredictionStore } from '../stores/predictionStore'
 import KnockoutMatchCard from '../components/KnockoutMatchCard.vue'
+import MobileBracketWizard from '../components/MobileBracketWizard.vue'
 import { useBracketConnectors } from '../composables/useBracketConnectors'
 import { useKnockoutPredictions } from '../composables/useKnockoutPredictions'
 import { KNOCKOUT_ROUNDS, BRACKET_LAYOUT } from '../util/constants'
 import { checkDisplayName, savePrediction } from '../services/api'
 
 const predictionStore = usePredictionStore()
+const { smAndDown } = useDisplay()
 
 // Reactive state
 const knockoutMatches = ref([])
@@ -144,7 +147,7 @@ const confirmSave = async () => {
       </v-col>
       <v-col cols="2">
         <v-btn
-          v-if="allPredictionsMade"
+          v-if="allPredictionsMade && !smAndDown"
           color="primary"
           size="large"
           rounded="pill"
@@ -161,6 +164,14 @@ const confirmSave = async () => {
       Loading bracket...
     </div>
     
+    <!-- Mobile Bracket Wizard -->
+    <MobileBracketWizard
+      v-else-if="smAndDown"
+      :knockout-matches="knockoutMatches"
+      @save-bracket="saveBracket"
+    />
+    
+    <!-- Desktop Bracket -->
     <div v-else class="bracket-container" ref="bracketContainerEl">
       <!-- Center SVG Layer for all center connectors -->
       <svg class="center-connector-svg" ref="centerSvg" :viewBox="centerSvgViewBox">

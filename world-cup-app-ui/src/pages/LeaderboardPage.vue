@@ -91,10 +91,33 @@ onMounted(() => {
     <v-container class="pa-4">
       <!-- Header Section -->
       <div class="header-section mb-6">
-        <h1 class="page-title">2026 World Cup Predictions Leaderboard</h1>
+        <v-row class="align-start">
+          <v-col cols="12" md="8">
+            <h1 class="page-title mb-0">
+              2026 World Cup Predictions Leaderboard
+            </h1>
+          </v-col>
+
+          <v-col
+            cols="12"
+            md="4"
+            class="d-flex justify-md-end justify-start"
+          >
+            <v-btn
+              color="primary"
+              size="large"
+              rounded="pill"
+              elevation="3"
+              @click="submitBracket"
+            >
+              Submit Your Bracket
+              <v-icon end>mdi-trophy</v-icon>
+            </v-btn>
+          </v-col>
+        </v-row>
         <p class="subtitle">{{ totalCount }} brackets submitted</p>
         
-        <div class="header-actions">
+        <!-- <div class="header-actions">
           <v-text-field
             v-model="searchQuery"
             placeholder="Search by name..."
@@ -117,11 +140,11 @@ onMounted(() => {
             Submit Your Bracket
             <v-icon end>mdi-trophy</v-icon>
           </v-btn>
-        </div>
+        </div> -->
       </div>
 
       <!-- Scoring Status Banner -->
-      <v-alert
+      <!-- <v-alert
         v-if="scoringStatusText"
         :color="scoringStatusColor"
         variant="tonal"
@@ -130,7 +153,7 @@ onMounted(() => {
       >
         <v-icon start>mdi-information</v-icon>
         {{ scoringStatusText }}
-      </v-alert>
+      </v-alert> -->
 
       <!-- Loading Skeleton -->
       <div v-if="loading" class="loading-container">
@@ -270,7 +293,7 @@ onMounted(() => {
 <style scoped>
 .leaderboard-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #1a1a1a;
   padding: 40px 20px;
 }
 

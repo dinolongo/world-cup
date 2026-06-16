@@ -1,7 +1,7 @@
 <script setup>
 import Schedule from '../components/Schedule.vue'
 import { ref, computed, onMounted } from 'vue'
-import { getMatches } from '../services/api'
+import { getMatches, refreshMatches } from '../services/api'
 
 // reactive state
 const selectedMatchday = ref(1);
@@ -15,8 +15,12 @@ const matches = computed(() => {
   return allMatches.value.filter(match => match.matchday === selectedMatchday.value);
 });
 
-// load data from API
-onMounted(async () => {
+const refreshMatchesData = async () => {
+  await refreshMatches();
+  await getMatchesData();
+}
+
+const getMatchesData = async () => {
   try {
     loading.value = true;
     const data = await getMatches();
@@ -56,12 +60,18 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+}
+
+// load data from API
+onMounted(async () => {
+  await getMatchesData();
 });
 </script>
 
 <template>
   <div class="schedule-page">
     <h1>World Cup 2026 - Match Day {{ selectedMatchday }} Schedule</h1>
+    <v-btn @click="refreshMatchesData">Refresh</v-btn>
     <Schedule :matches="matches" />
   </div>
 </template>

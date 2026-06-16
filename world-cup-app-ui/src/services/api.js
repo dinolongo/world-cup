@@ -31,6 +31,10 @@ export async function getMatchById(id) {
   return fetchAPI(`/matches/${id}`);
 }
 
+export async function refreshMatches() {
+  return fetchAPI('/matches/refresh');
+}
+
 export async function getTeams() {
   return fetchAPI('/teams');
 }

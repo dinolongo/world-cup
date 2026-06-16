@@ -32,4 +32,10 @@ public class MatchController {
         MatchDto match = matchService.getMatchById(id);
         return ResponseEntity.ok(match);
     }
+
+    @GetMapping("/refresh")
+    public void refreshMatches() {
+        log.info("GET /api/matches/refresh");
+        matchService.refreshMatchesFromApi();
+    }
 }
