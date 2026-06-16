@@ -263,6 +263,7 @@ const confirmSave = async () => {
       <div class="center-diamond">
         <!-- Final -->
         <div class="diamond-row final-row">
+          <div class="results-area">
            <div v-if="finalWinner" class="winner-message">
             <img 
               v-if="getTeamCrest(finalWinner)" 
@@ -290,8 +291,9 @@ const confirmSave = async () => {
             />
             <span class="bronze-text">{{ thirdPlaceWinner }} finishes 3rd</span>
           </div>
-          <h2 class="final-title">Final</h2>
-          <!-- Winner Message -->
+        </div>
+        <h2 class="final-title">Final</h2>
+        <!-- Winner Message -->
          
           <KnockoutMatchCard
             v-if="finalMatch"
@@ -582,6 +584,7 @@ h1 {
   gap: 32px;
   align-items: center;
   justify-content: center;
+  z-index: 2;
 }
 
 .center-connector-svg {
@@ -592,7 +595,7 @@ h1 {
   height: 100%;
   pointer-events: none;
   overflow: visible;
-  z-index: 5;
+  z-index: 0;
 }
 
 .diamond-row {
@@ -653,6 +656,26 @@ h1 {
   border-radius: 12px;
   box-shadow: 0 4px 16px rgba(255, 215, 0, 0.4);
   animation: celebrate 0.5s ease-out;
+}
+.final-row {
+  position: relative;
+}
+
+.results-area {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  margin-bottom: 24px;
+}
+
+.results-overlay {
+  position: absolute;
+  top: -250px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 500px;
 }
 
 @keyframes celebrate {

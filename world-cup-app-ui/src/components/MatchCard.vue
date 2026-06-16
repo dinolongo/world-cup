@@ -10,6 +10,7 @@ const props = defineProps({
 
 const formattedDate = computed(() => {
   const date = new Date(props.match.utcDate)
+  date.setHours(date.getHours() - 5) // Add 5 hour offset for timezone fix
   return date.toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
@@ -20,9 +21,11 @@ const formattedDate = computed(() => {
 
 const formattedTime = computed(() => {
   const date = new Date(props.match.utcDate)
+  date.setHours(date.getHours() - 5) // Add 5 hour offset for timezone fix
   return date.toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: 'America/Chicago',
     timeZoneName: 'short'
   })
 })
@@ -82,8 +85,7 @@ const matchStatus = computed(() => {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  width: 400px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .match-header {
@@ -120,6 +122,7 @@ const matchStatus = computed(() => {
   align-items: center;
   gap: 12px;
   flex: 1;
+  min-width: 0;
 }
 
 .team.away {
@@ -146,7 +149,7 @@ const matchStatus = computed(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 120px;
+  max-width: 140px;
 }
 
 .team-tla {
@@ -160,6 +163,8 @@ const matchStatus = computed(() => {
   align-items: center;
   gap: 8px;
   padding: 0 16px;
+  min-width: 100px;
+  flex-shrink: 0;
 }
 
 .score {

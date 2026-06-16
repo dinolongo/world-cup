@@ -2,7 +2,7 @@
 </script>
 
 <template>
-  <v-container  class="about-page">
+  <div class="about-page">
     <div class="center-content">
 
     <h1>App Created By Dino Longo</h1>
@@ -15,7 +15,7 @@
       <v-btn color="primary" variant="outlined">Call Me</v-btn>
     </a>
     </div>
-  </v-container>
+  </div>
 </template>
 
 <style scoped>

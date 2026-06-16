@@ -14,6 +14,7 @@ const groupedMatches = computed(() => {
   
   props.matches.forEach(match => {
     const date = new Date(match.utcDate)
+    date.setHours(date.getHours() - 5) // Add 5 hour offset for timezone fix
     const dateKey = date.toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'long',
@@ -68,6 +69,9 @@ const groupedMatches = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 32px;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .date-group {
@@ -88,6 +92,7 @@ const groupedMatches = computed(() => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
   gap: 20px;
+  width: 100%;
 }
 
 @media (max-width: 768px) {

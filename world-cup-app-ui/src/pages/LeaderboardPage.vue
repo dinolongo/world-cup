@@ -116,31 +116,6 @@ onMounted(() => {
           </v-col>
         </v-row>
         <p class="subtitle">{{ totalCount }} brackets submitted</p>
-        
-        <!-- <div class="header-actions">
-          <v-text-field
-            v-model="searchQuery"
-            placeholder="Search by name..."
-            prepend-inner-icon="mdi-magnify"
-            variant="outlined"
-            density="compact"
-            hide-details
-            class="search-field"
-            bg-color="white"
-            rounded="pill"
-          />
-          
-          <v-btn
-            color="primary"
-            size="large"
-            rounded="pill"
-            elevation="3"
-            @click="submitBracket"
-          >
-            Submit Your Bracket
-            <v-icon end>mdi-trophy</v-icon>
-          </v-btn>
-        </div> -->
       </div>
 
       <!-- Scoring Status Banner -->
@@ -201,6 +176,7 @@ onMounted(() => {
           :items="filteredEntries"
           :loading="loading"
           class="leaderboard-table"
+          hide-default-footer
         >
           <!-- <template v-slot:item.rank="{ item, index }">
             <div class="rank-cell">
@@ -346,12 +322,46 @@ onMounted(() => {
 }
 
 .leaderboard-card {
-  background: white;
+  background: transparent;
   overflow: hidden;
 }
 
 .leaderboard-table {
   background: transparent;
+}
+
+/* Table header styling */
+:deep(.leaderboard-card .v-table thead) {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%) !important;
+}
+
+:deep(.leaderboard-card .v-table thead th) {
+  background: transparent !important;
+  color: white !important;
+}
+
+/* Alternating row colors */
+:deep(.leaderboard-card .v-table tbody tr:nth-child(even)) {
+  background-color: #2a2a2a !important;
+}
+
+:deep(.leaderboard-card .v-table tbody tr:nth-child(odd)) {
+  background-color: #333333 !important;
+}
+
+/* Table row text color */
+:deep(.leaderboard-card .v-table tbody tr) {
+  color: white !important;
+}
+
+/* Ensure table background is transparent */
+:deep(.leaderboard-card .v-table) {
+  background: transparent !important;
+}
+
+/* Name column left alignment */
+:deep(.leaderboard-card .v-table td:nth-child(1)) {
+  text-align: left !important;
 }
 
 .rank-cell {

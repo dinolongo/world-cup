@@ -61,7 +61,7 @@ const continueToKnockout = () => {
       
       <!-- Step 1: Group Ranking -->
       <div v-else-if="currentStep === 'group-ranking'" class="step-container">
-        <h2 class="step-title">Step 1: Rank Teams in Each Group</h2>
+        <h2 class="step-title">Rank Teams in Each Group</h2>
         <p class="step-description">
           Drag and drop teams to determine their finishing order (1st, 2nd, 3rd, 4th)
         </p>
@@ -139,7 +139,7 @@ const continueToKnockout = () => {
       
       <!-- Step 2: Third Place Selection -->
       <div v-else-if="currentStep === 'third-place'" class="step-container">
-        <h2 class="step-title">Step 2: Select 8 Third-Place Teams</h2>
+        <h2 class="step-title">Select 8 Third-Place Teams</h2>
         <p class="step-description">
           Select 8 of the 12 third-place teams to advance to the Round of 32
         </p>

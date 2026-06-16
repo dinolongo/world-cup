@@ -5,8 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.worldcup2026.entity.Match;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class FootballDataMatchResponse {
