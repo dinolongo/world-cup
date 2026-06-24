@@ -12,6 +12,8 @@ public class FootballDataMatchResponse {
     private Integer id;
     private String status;
     private String utcDate;
+    private String stage;
+    private String group;
 
     @JsonProperty("homeTeam")
     private FootballDataTeamRef homeTeam;

@@ -101,6 +101,14 @@ const handleTeamClick = (teamId) => {
   max-width: 144px;
 }
 
+@media (max-width: 960px) {
+  .knockout-match-card {
+    min-width: unset;
+    max-width: unset;
+    width: 100%;
+  }
+}
+
 .match-info {
   display: flex;
   flex-direction: column;

@@ -80,12 +80,13 @@ const actualProgressPercentage = computed(() => {
 })
 
 const handleWinnerSelection = (teamId) => {
+  console.log('winner selected', teamId)
   if (!currentMatch.value) return
   
   selectWinner(currentMatch.value, teamId)
   predictedMatchesCount.value++
   
-  if (allPredictionsMade.value) {
+  if (predictedMatchesCount.value >= TOTAL_KNOCKOUT_MATCHES) {
     setTimeout(() => {
       showCompletionScreen.value = true
     }, 500)
@@ -267,6 +268,44 @@ const resetWizard = () => {
   min-width: unset;
   max-width: unset;
   width: 100%;
+  padding: 16px;
+}
+
+.mobile-match-card :deep(.match-info) {
+  font-size: 14px;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.mobile-match-card :deep(.match-number) {
+  font-size: 14px;
+}
+
+.mobile-match-card :deep(.date-time) {
+  font-size: 13px;
+}
+
+.mobile-match-card :deep(.stadium) {
+  font-size: 12px;
+}
+
+.mobile-match-card :deep(.city) {
+  font-size: 12px;
+}
+
+.mobile-match-card :deep(.teams) {
+  gap: 12px;
+}
+
+.mobile-match-card :deep(.team-button) {
+  padding: 12px 16px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.mobile-match-card :deep(.team-flag) {
+  width: 32px;
+  height: 32px;
 }
 
 .completion-screen {

@@ -137,6 +137,8 @@ public class MatchService {
                 .status(apiMatch.getMatchStatus())
                 .homeScore(apiMatch.getScore() != null ? apiMatch.getScore().getHomeTeam() : null)
                 .awayScore(apiMatch.getScore() != null ? apiMatch.getScore().getAwayTeam() : null)
+                .stage(apiMatch.getStage())
+                .group(apiMatch.getGroup())
                 .duration(parseMatchDuration(apiMatch.getScore() != null ? apiMatch.getScore().getDuration() : null))
                 .build();
         matchRepository.save(match);
@@ -148,6 +150,12 @@ public class MatchService {
         existingMatch.setStatus(apiMatch.getMatchStatus());
         existingMatch.setHomeScore(apiMatch.getScore() != null ? apiMatch.getScore().getHomeTeam() : null);
         existingMatch.setAwayScore(apiMatch.getScore() != null ? apiMatch.getScore().getAwayTeam() : null);
+        if (apiMatch.getStage() != null) {
+            existingMatch.setStage(apiMatch.getStage());
+        }
+        if (apiMatch.getGroup() != null) {
+            existingMatch.setGroup(apiMatch.getGroup());
+        }
         existingMatch.setDuration(parseMatchDuration(apiMatch.getScore() != null ? apiMatch.getScore().getDuration() : null));
         matchRepository.save(existingMatch);
         log.debug("Updated match: {}", existingMatch.getId());

@@ -149,13 +149,11 @@ const confirmSave = async () => {
         <v-btn
           v-if="allPredictionsMade && !smAndDown"
           color="primary"
-          size="large"
-          rounded="pill"
           elevation="3"
+          size="large"
           @click="saveBracket"
         >
-          <v-icon start>mdi-content-save</v-icon>
-          Save My Bracket
+          Save
         </v-btn>
       </v-col>
     </v-row>

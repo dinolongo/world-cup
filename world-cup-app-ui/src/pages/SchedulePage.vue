@@ -1,6 +1,6 @@
 <script setup>
 import Schedule from '../components/Schedule.vue'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { getMatches, refreshMatches } from '../services/api'
 
 // reactive state
@@ -9,6 +9,8 @@ const selectedDate = ref(null);
 const allMatches = ref([]);
 const loading = ref(true);
 const error = ref(null);
+const countdown = ref({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+let countdownInterval = null;
 
 // computed
 const matches = computed(() => {
@@ -55,6 +57,48 @@ const filteredMatches = computed(() => {
     return dateKey === selectedDate.value;
   }).sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
 });
+
+// Find next upcoming match
+const nextMatch = computed(() => {
+  if (!allMatches.value.length) return null;
+  
+  const now = new Date();
+  const upcomingMatches = allMatches.value.filter(match => {
+    const matchDate = new Date(match.utcDate);
+    matchDate.setHours(matchDate.getHours() - 5); // Apply -5 hour offset for timezone fix
+    return matchDate > now && match.status !== 'FINISHED';
+  });
+  
+  if (upcomingMatches.length === 0) return null;
+  
+  return upcomingMatches.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))[0];
+});
+
+// Update countdown
+const updateCountdown = () => {
+  if (!nextMatch.value) {
+    countdown.value = { days: 0, hours: 0, minutes: 0, seconds: 0 };
+    return;
+  }
+  
+  const now = new Date();
+  const matchDate = new Date(nextMatch.value.utcDate);
+  matchDate.setHours(matchDate.getHours() - 5); // Apply -5 hour offset for timezone fix
+  
+  const diff = matchDate - now;
+  
+  if (diff <= 0) {
+    countdown.value = { days: 0, hours: 0, minutes: 0, seconds: 0 };
+    return;
+  }
+  
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  
+  countdown.value = { days, hours, minutes, seconds };
+};
 
 const refreshMatchesData = async () => {
   await refreshMatches();
@@ -119,14 +163,49 @@ onMounted(async () => {
   } else if (uniqueDates.value.length > 0) {
     selectedDate.value = uniqueDates.value[0];
   }
+  
+  // Start countdown timer
+  updateCountdown();
+  countdownInterval = setInterval(updateCountdown, 1000);
+});
+
+onUnmounted(() => {
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+  }
 });
 </script>
 
 <template>
   <div class="schedule-page">
     <div class="page-header">
-      <h1>World Cup 2026 - Match Day {{ selectedMatchday }} Schedule</h1>
+      <h1>World Cup 2026 Schedule</h1>
       <v-btn color="primary" @click="refreshMatchesData">Refresh</v-btn>
+    </div>
+    
+    <div class="countdown-container" v-if="nextMatch">
+      <h2 class="countdown-title">Next Match: {{ nextMatch.homeTeam.name }} vs {{ nextMatch.awayTeam.name }}</h2>
+      <div class="countdown-timer">
+        <div class="countdown-item">
+          <span class="countdown-value">{{ countdown.days }}</span>
+          <span class="countdown-label">Days</span>
+        </div>
+        <span class="countdown-separator">:</span>
+        <div class="countdown-item">
+          <span class="countdown-value">{{ countdown.hours }}</span>
+          <span class="countdown-label">Hours</span>
+        </div>
+        <span class="countdown-separator">:</span>
+        <div class="countdown-item">
+          <span class="countdown-value">{{ countdown.minutes }}</span>
+          <span class="countdown-label">Minutes</span>
+        </div>
+        <span class="countdown-separator">:</span>
+        <div class="countdown-item">
+          <span class="countdown-value">{{ countdown.seconds }}</span>
+          <span class="countdown-label">Seconds</span>
+        </div>
+      </div>
     </div>
     
     <!-- Date Selector -->
@@ -215,9 +294,94 @@ h1 {
   box-shadow: 0 4px 12px rgba(30, 58, 95, 0.4);
 }
 
+.countdown-container {
+  width: 100%;
+  max-width: 1400px;
+  padding: 24px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(30, 58, 95, 0.4);
+}
+
+.countdown-title {
+  color: white;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 20px 0;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.countdown-timer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.countdown-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 80px;
+}
+
+.countdown-value {
+  font-size: 36px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  line-height: 1;
+}
+
+.countdown-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.countdown-separator {
+  font-size: 36px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 8px;
+}
+
 @media (max-width: 768px) {
   h1 {
     font-size: 24px;
+  }
+  
+  .countdown-container {
+    padding: 16px;
+  }
+  
+  .countdown-title {
+    font-size: 16px;
+  }
+  
+  .countdown-timer {
+    gap: 8px;
+  }
+  
+  .countdown-item {
+    min-width: 60px;
+  }
+  
+  .countdown-value {
+    font-size: 24px;
+  }
+  
+  .countdown-label {
+    font-size: 10px;
+  }
+  
+  .countdown-separator {
+    font-size: 24px;
+    margin: 0 4px;
   }
   
   .date-selector {

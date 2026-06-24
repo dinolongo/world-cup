@@ -396,6 +396,7 @@ const continueToKnockout = () => {
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
+  color:white;
 }
 
 .team-info {
